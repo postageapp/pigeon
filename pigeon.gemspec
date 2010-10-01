@@ -25,14 +25,18 @@ Gem::Specification.new do |s|
      "README.rdoc",
      "Rakefile",
      "VERSION",
+     "bin/launcher.example",
      "lib/pigeon.rb",
      "lib/pigeon/engine.rb",
      "lib/pigeon/logger.rb",
      "lib/pigeon/pidfile.rb",
      "lib/pigeon/queue.rb",
+     "lib/pigeon/support.rb",
      "pigeon.gemspec",
      "test/helper.rb",
-     "test/test_pigeon.rb"
+     "test/test_pigeon.rb",
+     "test/test_pigeon_engine.rb",
+     "test/test_pigeon_queue.rb"
   ]
   s.homepage = %q{http://github.com/tadman/pigeon}
   s.rdoc_options = ["--charset=UTF-8"]
