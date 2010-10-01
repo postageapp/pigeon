@@ -1,0 +1,107 @@
+= pigeon
+
+This is a simple framework for building EventMachine engines that are
+constantly running. These are commonly used for background processing jobs,
+batch processing, or for providing specific network services.
+
+Installation should be as simple as:
+
+    gem install pigeon
+    
+Your first Pigeon engine can be defined quite simply:
+
+    class MyEngine < Pigeon::Engine
+      def self.included(engine)
+        engine.after_start do
+          # Operations to be performed after start
+        end
+      end
+    end
+    
+Other handlers can be defined:
+
+    after_initialize
+    before_start
+    after_start
+    before_stop
+    after_stop
+    
+A primary function of an engine might be to intermittently perform a task.
+Several methods exist to facilitate this:
+
+    class MyEngine < Pigeon::Engine
+      def self.included(engine)
+        engine.after_start do
+          engine.periodically_trigger_task(10) do
+          end
+        end
+      end
+    end
+
+Starting your application can be done with a wrapper script that is constructed somewhat like bin/launcher.example
+
+An example would look like:
+
+    #!/usr/bin/env ruby
+
+    COMMAND_NAME = 'launcher'
+    engine = engine
+
+    options = {
+      :dir_mode => :normal,
+      :dir => engine.pid_dir,
+      :debug => true, # ((ENV['RAILS_ENV'] == 'production') ? ENV['PINGITY_DEBUG'] : true),
+      :modules => [ ]
+    }
+
+    begin
+      case (command)
+      when 'start'
+        engine.start(options) do |pid|
+          puts "Pigeon Engine now running. [%d]" % pid
+        end
+      when 'stop'
+        engine.stop(options) do |pid|
+          if (pid)
+            puts "Pigeon Engine shut down. [%d]" % pid
+          else
+            puts "Pigeon Engine was not running."
+          end
+        end
+      when 'restart'
+        engine.restart(options) do |old_pid, new_pid|
+          if (old_pid)
+            puts "Pigeon Engine terminated. [%d]" % old_pid
+          end
+          puts "Pigeon Engine now running. [%d]" % new_pid
+        end
+      when 'status'
+        engine.status(options) do |pid|
+          if (pid)
+            puts "Pigeon Engine running. [%d]" % pid
+          else
+            puts "Pigeon Engine is not running."
+          end
+        end
+      when 'run'
+        options[:logger] = Pigeon::Logger.new(STDOUT)
+
+        engine.run(options) do |pid|
+          puts "Pigeon Engine now running. [%d]" % pid
+          puts "Use ^C to terminate."
+        end
+      else
+        puts "Usage: #{COMMAND_NAME} [start|stop|restart|status|run]"
+      end
+    rescue Interrupt
+      puts "Shutting down."
+      exit(0)
+    end
+    
+== Status
+
+This engine is currently in development.
+
+== Copyright
+
+Copyright (c) 2010 Scott Tadman, The Working Group
