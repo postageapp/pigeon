@@ -1,5 +1,9 @@
 class Pigeon::Pidfile
   # == Constants ============================================================
+
+  # == Properties ===========================================================
+  
+  attr_reader :path 
   
   # == Class Methods ========================================================
   
@@ -11,7 +15,19 @@ class Pigeon::Pidfile
     @path += '.pid' unless (@path.match(/\./))
   end
   
-  def contents
+  def running?
+    !!self.running
+  end
+  
+  def running
+    pid = self.saved_pid
+
+    (pid and Process.kill(0, pid)) ? pid : nil
+  rescue Errno::ESRCH
+    nil
+  end
+  
+  def saved_pid
     File.read(@path).to_i
   rescue Errno::ENOENT
     nil
@@ -19,17 +35,17 @@ class Pigeon::Pidfile
   
   def create!(pid = nil)
     open(@path, 'w') do |fh|
-      fh.puts pid || $$
+      fh.puts(pid || $$)
     end
   end
   
   def remove!
-    return unless (exists?)
+    return unless (exist?)
 
     File.unlink(@path)
   end
   
-  def exists?
+  def exist?
     File.exist?(@path)
   end
 end

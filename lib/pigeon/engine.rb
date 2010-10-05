@@ -45,7 +45,13 @@ class Pigeon::Engine
 
   def self.launch_with_options(options = nil)
     EventMachine.run do
-      new(options_with_defaults(options)).run
+      engine = new(options_with_defaults(options))
+
+      Signal.trap('INT') do
+        engine.terminate
+      end
+
+      engine.run
     end
   end
   
@@ -63,29 +69,37 @@ class Pigeon::Engine
     end
 
     pid_file(options).create!(pid)
-    yield(pid.to_i)
+
+    yield(pid) if (block_given?)
+    
+    pid
   end
 
   def self.run(options = nil)
-    yield($$)
+    yield($$) if (block_given?)
+
     launch_with_options((options || { }).merge(:foreground => true))
   end
   
   def self.stop(options = nil)
     pf = pid_file(options)
-    pid = pf.contents
+    pid = pf.running
     
     if (pid)
       begin
-        Process.kill('QUIT', pid)
+        Process.kill('INT', pid)
       rescue Errno::ESRCH
         # No such process exception
         pid = nil
       end
       pf.remove!
     end
+    
+    pid = pid.to_i if (pid)
 
-    yield(pid)
+    yield(pid) if (block_given?)
+    
+    pid
   end
 
   def self.restart(options = nil)
@@ -94,7 +108,11 @@ class Pigeon::Engine
   end
   
   def self.status(options = nil)
-    yield(pid_file(options).contents)
+    pid = pid_file(options).running
+    
+    yield(pid) if (block_given?)
+    
+    pid
   end
 
   def self.sql_logger
@@ -192,7 +210,9 @@ class Pigeon::Engine
   
   # Shuts down the engine.
   def terminate
+    run_chain(:before_stop)
     EventMachine.stop_event_loop
+    run_chain(:after_stop)
   end
   
   # Used to queue a block for immediate processing on a background thread.

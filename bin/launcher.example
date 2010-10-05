@@ -4,7 +4,6 @@ COMMAND_NAME = 'launcher'
 engine = engine
 
 options = {
-  :dir_mode => :normal,
   :dir => engine.pid_dir,
   :debug => true, # ((ENV['RAILS_ENV'] == 'production') ? ENV['PINGITY_DEBUG'] : true),
   :modules => [ ]
