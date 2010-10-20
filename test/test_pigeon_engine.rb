@@ -28,35 +28,39 @@ end
 
 class CallbackTestEngine < Pigeon::Engine
   after_initialize do
-    self.track(:after_initialize)
+    track(:after_initialize)
   end
   
   before_start do
-    self.track(:before_start)
+    track(:before_start)
   end
   
   after_start do
-    self.track(:after_start)
+    track(:after_start)
   end
   
   before_stop do
-    self.track(:before_stop)
+    track(:before_stop)
   end
   
   after_stop do
-    self.track(:after_stop)
+    track(:after_stop)
+
     @options[:pipe].close
   end
   
   def track(callback)
-    pipe = @options[:pipe]
-
-    pipe.puts(callback.to_s)
-    pipe.flush
+    @options[:pipe].puts(callback.to_s)
+    @options[:pipe].flush
   end
 end
 
 class TestPigeonEngine < Test::Unit::TestCase
+  def test_default_options
+    assert TestEngine.engine_logger
+    assert TestEngine.engine_logger.is_a?(Logger)
+  end
+  
   def test_example_subclass
     engine_pid = nil
     
@@ -122,9 +126,14 @@ class TestPigeonEngine < Test::Unit::TestCase
     
     write_fd.close
     
+    reported_status = false
+    
     CallbackTestEngine.status do |pid|
       assert_equal engine_pid, pid
+      reported_status = true
     end
+    
+    assert reported_status
     
     CallbackTestEngine.stop do |pid|
       assert_equal engine_pid, pid

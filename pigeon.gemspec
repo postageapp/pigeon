@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["tadman"]
-  s.date = %q{2010-10-05}
+  s.date = %q{2010-10-19}
   s.default_executable = %q{launcher.example}
   s.description = %q{Pigeon is a simple way to get started building an EventMachine engine that's intended to run as a background job.}
   s.email = %q{github@tadman.ca}
@@ -28,7 +28,9 @@ Gem::Specification.new do |s|
      "bin/launcher.example",
      "lib/pigeon.rb",
      "lib/pigeon/engine.rb",
+     "lib/pigeon/launcher.rb",
      "lib/pigeon/logger.rb",
+     "lib/pigeon/option_accessor.rb",
      "lib/pigeon/pidfile.rb",
      "lib/pigeon/queue.rb",
      "lib/pigeon/support.rb",
@@ -36,6 +38,8 @@ Gem::Specification.new do |s|
      "test/helper.rb",
      "test/test_pigeon.rb",
      "test/test_pigeon_engine.rb",
+     "test/test_pigeon_launcher.rb",
+     "test/test_pigeon_option_accessor.rb",
      "test/test_pigeon_queue.rb"
   ]
   s.homepage = %q{http://github.com/tadman/pigeon}
@@ -47,6 +51,8 @@ Gem::Specification.new do |s|
     "test/helper.rb",
      "test/test_pigeon.rb",
      "test/test_pigeon_engine.rb",
+     "test/test_pigeon_launcher.rb",
+     "test/test_pigeon_option_accessor.rb",
      "test/test_pigeon_queue.rb"
   ]
 

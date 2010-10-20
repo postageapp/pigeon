@@ -1,5 +1,6 @@
 require 'eventmachine'
 require 'socket'
+require 'digest/sha1'
 
 class Pigeon::Engine
   # == Submodules ===========================================================
@@ -7,9 +8,43 @@ class Pigeon::Engine
   class RuntimeError < Exception
   end
   
+  class ConfigurationError < Exception
+  end
+  
+  # == Extensions ==========================================================
+  
+  extend Pigeon::OptionAccessor
+  
   # == Properties ===========================================================
   
-  attr_reader :logger
+  option_accessor :logger
+
+  option_accessor :name
+  option_accessor :pid_file_name
+  option_accessor :foreground,
+    :boolean => true
+  option_accessor :debug,
+    :boolean => true
+    
+  option_accessor :engine_log_name,
+    :default => 'engine.log'
+  option_accessor :engine_logger
+
+  option_accessor :query_log_name,
+    :default => 'query.log'
+  option_accessor :query_logger
+  
+  option_accessor :try_pid_dirs,
+    :default => %w[
+      /var/run
+      /tmp
+    ].freeze
+
+  option_accessor :try_log_dirs,
+    :default => %w[
+      /var/log
+      /tmp
+    ].freeze
 
   # == Constants ============================================================
   
@@ -20,33 +55,45 @@ class Pigeon::Engine
     before_stop
     after_stop
   ].collect(&:to_sym).freeze
-  
-  PID_DIR = [
-    File.expand_path(File.join(*%w[ .. .. .. .. shared run ]), File.dirname(__FILE__)),
-    '/var/run',
-    '/tmp'
-  ].find { |path| File.exist?(path) and File.writable?(path) }
-
-  LOG_DIR = [
-    File.expand_path(File.join(*%w[ .. .. .. .. shared log ] ), File.dirname(__FILE__)),
-    File.expand_path(File.join(*%w[ .. .. log ]), File.dirname(__FILE__)),
-    '/tmp'
-  ].find { |path| File.exist?(path) and File.writable?(path) }
-  
-  DEFAULT_OPTIONS = {
-    :pid_file => File.expand_path('pigeon-engine.pid', PID_DIR)
-  }.freeze
 
   # == Class Methods ========================================================
   
-  def self.options_with_defaults(options = nil)
-    options ? DEFAULT_OPTIONS.merge(options) : DEFAULT_OPTIONS
+  # Returns the human-readable name of this engine. Defaults to the name
+  # of the engine class, but can be replaced to customize a subclass.
+  def self.name
+    @name or self.to_s.gsub(/::/, ' ')
+  end
+  
+  # Returns the name of the PID file to use. The full path to the file
+  # is specified elsewhere.
+  def self.pid_file_name
+    @pid_file_name or self.name.downcase.gsub(/ /, '-') + '.pid'
+  end
+  
+  # Returns the full path to the PID file that should be used to track
+  # the running status of this engine.
+  def self.pid_file_path
+    @pid_file_path ||= begin
+      if (path = Pigeon::Support.find_writable_directory(self.try_pid_dirs))
+        File.expand_path(self.pid_file_name, path)
+      else
+        raise ConfigurationError, "Could not find a writable directory for the PID file in: #{self.try_pid_dirs.join(' ')}"
+      end
+    end
   end
 
-  def self.launch_with_options(options = nil)
+  # Returns the full path to the directory used to store logs.
+  def self.log_dir
+    @log_file_path ||= Pigeon::Support.find_writable_directory(self.try_log_dirs)
+  end
+  
+  # Launches the engine with the specified options
+  def self.launch(options = nil)
     EventMachine.run do
-      engine = new(options_with_defaults(options))
-
+      engine = new(options)
+      
+      yield(engine) if (block_given?)
+    
       Signal.trap('INT') do
         engine.terminate
       end
@@ -55,35 +102,30 @@ class Pigeon::Engine
     end
   end
   
-  def self.pid_dir
-    PID_DIR
-  end
-  
-  def self.pid_file(options = nil)
-    Pigeon::Pidfile.new(options_with_defaults(options)[:pid_file])
+  def self.pid_file
+    @pid_file ||= Pigeon::Pidfile.new(self.pid_file_path)
   end
 
   def self.start(options = nil)
     pid = Pigeon::Support.daemonize do
-      launch_with_options(options)
+      launch(options)
     end
 
-    pid_file(options).create!(pid)
+    pid_file.create!(pid)
 
     yield(pid) if (block_given?)
     
     pid
   end
 
-  def self.run(options = nil)
+  def self.run
     yield($$) if (block_given?)
 
-    launch_with_options((options || { }).merge(:foreground => true))
+    launch(:foreground => true)
   end
   
-  def self.stop(options = nil)
-    pf = pid_file(options)
-    pid = pf.running
+  def self.stop
+    pid = self.pid_file.running
     
     if (pid)
       begin
@@ -92,7 +134,8 @@ class Pigeon::Engine
         # No such process exception
         pid = nil
       end
-      pf.remove!
+
+      pid_file.remove!
     end
     
     pid = pid.to_i if (pid)
@@ -102,28 +145,41 @@ class Pigeon::Engine
     pid
   end
 
-  def self.restart(options = nil)
-    self.stop(options)
-    self.start(options)
+  def self.restart
+    self.stop
+    self.start
   end
   
-  def self.status(options = nil)
-    pid = pid_file(options).running
+  def self.running?
+    pid_file.running
+  end
+  
+  def self.status
+    pid = pid_file.running
     
     yield(pid) if (block_given?)
     
     pid
   end
-
-  def self.sql_logger
-    f = File.open(File.expand_path("query.log", LOG_DIR), 'w+')
-    f.sync = true
-    
-    Pigeon::Logger.new(f)
-  end
   
-  def self.log_dir
-    LOG_DIR
+  # Returns a default logger for the engine.
+  def self.engine_logger
+    @engine_logger ||= begin
+      f = File.open(File.expand_path(self.engine_log_name, self.log_dir), 'w+')
+      f.sync = true
+
+      Pigeon::Logger.new(f)
+    end
+  end
+
+  # Returns a default logger for queries.
+  def self.query_logger
+    @query_logger ||= begin
+      f = File.open(File.expand_path(self.query_log_name, self.log_dir), 'w+')
+      f.sync = true
+    
+      Pigeon::Logger.new(f)
+    end
   end
 
   # == Instance Methods =====================================================
@@ -131,35 +187,47 @@ class Pigeon::Engine
   def initialize(options = nil)
     @options = options || { }
     
-    @task_lock = { }
+    @task_lock = Mutex.new
+    @task_locks = { }
 
-    @logger = @options[:logger] || Pigeon::Logger.new(File.open(File.expand_path('engine.log', LOG_DIR), 'w+'))
-    
-    @logger.level = Pigeon::Logger::DEBUG if (@options[:debug])
+    self.logger ||= self.engine_logger
+    self.logger.level = Pigeon::Logger::DEBUG if (self.debug?)
     
     @queue = { }
     
     run_chain(:after_initialize)
   end
 
+  # Returns the hostname of the system this engine is running on.
+  def host
+    Socket.gethostname
+  end
+
+  # Returns a unique 160-bit identifier for this engine expressed as a 40
+  # character hexadecimal string. The first 32-bit sequence is a timestamp
+  # so these numbers increase over time and can be used to identify when
+  # a particular instance was launched.
+  def id
+    @id ||= '%8x%s' % [
+      Time.now.to_i,
+      Digest::SHA1.hexdigest(
+        '%.8f%8x' % [ Time.now.to_f, rand(1 << 32) ]
+      )[0, 32]
+    ]
+  end
+
+  # Handles the run phase of the engine, triggers the before_start and
+  # after_start events accordingly.
   def run
     run_chain(:before_start)
 
     STDOUT.sync = true
 
-    @logger.info("Engine \##{id} Running")
+    logger.info("Engine \##{id} Running")
     
     run_chain(:after_start)
   end
 
-  def host
-    Socket.gethostname
-  end
-
-  def id
-    @id ||= '%8x%8x' % [ Time.now.to_i, rand(1 << 32) ]
-  end
-  
   # Used to periodically execute a task or block. When giving a task name,
   # a method by that name is called, otherwise a block must be supplied.
   # An interval can be specified in seconds, or will default to 1.
@@ -177,19 +245,20 @@ class Pigeon::Engine
     end
   end
   
+  # This is a somewhat naive locking mechanism that may break down
+  # when two requests are fired off within a nearly identical period.
+  # For now, this achieves a general purpose solution that should work
+  # under most circumstances. Refactor later to improve.
   def task_lock(task_name)
-    # NOTE: This is a somewhat naive locking mechanism that may break down
-    #       when two requests are fired off within a nearly identical period.
-    #       For now, this achieves a general purpose solution that should work
-    #       under most circumstances. Refactor later to improve.
+    @task_lock.synchronize do
+      @task_locks[task_name] ||= Mutex.new
+    end
     
-    return if (@task_lock[task_name])
+    return if (@task_locks[task_name].locked?)
     
-    @task_lock[task_name] = true
-    
-    yield if (block_given?)
-    
-    @task_lock[task_name] = false
+    @task_lock[task_name].synchronize do
+      yield if (block_given?)
+    end
   end
 
   def timer(interval, &block)
@@ -202,21 +271,27 @@ class Pigeon::Engine
     EventMachine::PeriodicTimer.new(interval, &block)
   end
   
-  # Used to defer a block of work for near-immediate execution. Uses the
-  # EventMachine#defer method but is not as efficient as the queue method.
+  # Used to defer a block of work for near-immediate execution. Is a 
+  # wrapper around EventMachine#defer and does not perform as well as using
+  # the alternate queue method.
   def defer(&block)
     EventMachine.defer(&block)
   end
   
-  # Shuts down the engine.
+  # Shuts down the engine. Will also trigger the before_stop and after_stop
+  # events.
   def terminate
     run_chain(:before_stop)
+
     EventMachine.stop_event_loop
+
     run_chain(:after_stop)
   end
   
   # Used to queue a block for immediate processing on a background thread.
-  # An optional queue name can be used to sequence tasks properly.
+  # An optional queue name can be used to sequence tasks properly. The main
+  # queue has a large number of threads, while the named queues default
+  # to only one so they can be processed sequentially.
   def queue(name = :default, &block)
     target_queue = @queue[name] ||= Pigeon::Queue.new(name == :default ? nil : 1)
     
@@ -251,10 +326,12 @@ class Pigeon::Engine
     end
   end
 
+  # Returns true if the debug option was set, false otherwise.
   def debug?
     !!@options[:debug]
   end
   
+  # Returns true if running in the foreground, false otherwise.
   def foreground?
     !!@options[:foreground]
   end
