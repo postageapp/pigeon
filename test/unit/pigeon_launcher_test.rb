@@ -1,4 +1,4 @@
-require File.expand_path(File.join(*%w[ helper ]), File.dirname(__FILE__))
+require File.expand_path(File.join(*%w[ .. helper ]), File.dirname(__FILE__))
 
 class PigeonLauncherTest < Test::Unit::TestCase
   def test_default_launcher

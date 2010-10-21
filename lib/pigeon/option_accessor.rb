@@ -16,6 +16,8 @@ module Pigeon::OptionAccessor
   # but these defaults can be over-ridden in subclasses and instances
   # without interference. Optional hash at end of list can be used to set:
   #  * :default => Assigns a default value which is otherwise nil
+  #  * :boolean => If true, creates an additional name? method and will
+  #                convert all assigned values to a boolean true/false.
   def option_reader(*names)
     names = [ names ].flatten.compact
     options = names.last.is_a?(Hash) ? names.pop : { }

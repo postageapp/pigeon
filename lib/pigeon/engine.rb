@@ -18,28 +18,23 @@ class Pigeon::Engine
   # == Properties ===========================================================
   
   option_accessor :logger
-
   option_accessor :name
   option_accessor :pid_file_name
   option_accessor :foreground,
     :boolean => true
   option_accessor :debug,
     :boolean => true
-    
   option_accessor :engine_log_name,
     :default => 'engine.log'
   option_accessor :engine_logger
-
   option_accessor :query_log_name,
     :default => 'query.log'
   option_accessor :query_logger
-  
   option_accessor :try_pid_dirs,
     :default => %w[
       /var/run
       /tmp
     ].freeze
-
   option_accessor :try_log_dirs,
     :default => %w[
       /var/log
@@ -193,7 +188,7 @@ class Pigeon::Engine
     self.logger ||= self.engine_logger
     self.logger.level = Pigeon::Logger::DEBUG if (self.debug?)
     
-    @queue = { }
+    @dispatcher = { }
     
     run_chain(:after_initialize)
   end
@@ -273,7 +268,7 @@ class Pigeon::Engine
   
   # Used to defer a block of work for near-immediate execution. Is a 
   # wrapper around EventMachine#defer and does not perform as well as using
-  # the alternate queue method.
+  # the alternate dispatch method.
   def defer(&block)
     EventMachine.defer(&block)
   end
@@ -288,12 +283,12 @@ class Pigeon::Engine
     run_chain(:after_stop)
   end
   
-  # Used to queue a block for immediate processing on a background thread.
+  # Used to dispatch a block for immediate processing on a background thread.
   # An optional queue name can be used to sequence tasks properly. The main
   # queue has a large number of threads, while the named queues default
   # to only one so they can be processed sequentially.
-  def queue(name = :default, &block)
-    target_queue = @queue[name] ||= Pigeon::Queue.new(name == :default ? nil : 1)
+  def dispatch(name = :default, &block)
+    target_queue = @dispatcher[name] ||= Pigeon::Dispatcher.new(name == :default ? nil : 1)
     
     target_queue.perform(&block)
   end
