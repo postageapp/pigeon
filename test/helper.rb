@@ -20,7 +20,7 @@ class Test::Unit::TestCase
   def assert_timeout(time, message = nil, &block)
     Timeout::timeout(time, &block)
   rescue Timeout::Error
-    fail!(message)
+    flunk(message || 'assert_timeout timed out')
   end
   
   def assert_eventually(time = nil, message = nil, &block)
@@ -30,7 +30,7 @@ class Test::Unit::TestCase
       select(nil, nil, nil, 0.1)
       
       if (time and (Time.now.to_i - start_time > time))
-        fail!(message)
+        flunk(message || 'assert_eventually timed out')
       end
     end
   end

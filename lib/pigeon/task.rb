@@ -17,7 +17,7 @@ class Pigeon::Task
   # Returns an array of the terminal states for this task. Default is
   # :failed, :finished but this can be customized in a subclass.
   def self.terminal_states
-    [ :failed, :finished ].freeze
+    @terminal_states ||= [ :failed, :finished ].freeze
   end
 
   # == Instance Methods =====================================================
@@ -35,7 +35,7 @@ class Pigeon::Task
     
     @state = self.class.initial_state
 
-    run_state!
+    run_state!(@state)
   end
 
   # Returns true if the task is in the finished state, false otherwise.
@@ -75,24 +75,17 @@ class Pigeon::Task
   end
   
 protected
-  def run_state!
-    current_state = @state
+  def run_state!(state)
+    # Grab the current state and save it here, as it may switch at any time
+    @state = state
+    terminate = self.class.terminal_states.include?(state)
 
-    before_state(current_state)
+    before_state(state)
 
-    if (@callback)
-      case (@callback.arity)
-      when 2
-        @callback.call(self, current_state)
-      when 1
-        @callback.call(current_state)
-      else
-        @callback.call
-      end
-    end
-
-    unless (self.terminal_state?)
-      state_method = :"state_#{@state}!"
+    send_callback(state) if (@callback)
+    
+    unless (terminate)
+      state_method = :"state_#{state}!"
 
       # Only perform this state action if it is defined, otherwise ignore
       # as some states may be deliberately NOOP in order to wait for some
@@ -111,23 +104,37 @@ protected
     
     after_failed
   ensure
-    after_state(current_state)
+    after_state(state)
 
-    if (self.class.terminal_states.include?(current_state))
+    if (terminate)
       self.after_finished
+      
+      # Send a final notification callback
+      if (@callback and @callback.arity == 0)
+        @callback.call
+      end
     end
   end
 
   # Schedules the next state to be executed. This method should only be
   # called once per state or it may result in duplicated state actions.
   def transition_to_state(state)
-    @state = state
-
     @engine.dispatch do
-      run_state!
+      run_state!(state)
     end
     
-    @state
+    state
+  end
+
+  def send_callback(state)
+    # State-notificaton callbacks are not made to blocks that do not take
+    # arguments, but instead a singe final callback is made.
+    case (@callback.arity)
+    when 2
+      @callback.call(self, state)
+    when 1
+      @callback.call(state)
+    end
   end
   
   # Called just after the task is initialized.

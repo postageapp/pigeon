@@ -49,17 +49,15 @@ class PigeonTaskTest < Test::Unit::TestCase
     
     task = Pigeon::Task.new(engine)
     
-    finished = false
+    reported = false
     
     task.run! do
-      finished = true
+      reported = true
     end
 
     assert_eventually(5) do
-      task.finished?
+      task.finished? and reported
     end
-    
-    assert finished
     
     assert_equal :finished, task.state
 
@@ -115,19 +113,35 @@ class PigeonTaskTest < Test::Unit::TestCase
     
     task = FailingTask.new(engine)
     
-    finished = false
+    reported = false
     
     task.run! do
-      finished = true
+      reported = true
     end
     
     assert_eventually(5) do
-      task.failed?
+      task.failed? and reported
     end
 
-    assert finished
-    
     assert task.exception?
+  end
+
+  def test_block_notification
+    engine = Pigeon::Engine.new
+    
+    task = Pigeon::Task.new(engine)
+
+    states_triggered = [ ]
+
+    task.run! do |state|
+      states_triggered << state
+    end
+    
+    assert_eventually(5) do
+      task.finished?
+    end
+    
+    assert_equal [ :initialized, :finished ], states_triggered
   end
 
   def test_priority_order
