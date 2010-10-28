@@ -15,4 +15,8 @@ class Pigeon::Scheduler
 
   # == Instance Methods =====================================================
   
+  def initialize(queue, processors)
+    @queue = queue
+    @processors = processors
+  end
 end
