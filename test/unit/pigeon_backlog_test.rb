@@ -1,41 +1,25 @@
 require File.expand_path(File.join(*%w[ .. helper ]), File.dirname(__FILE__))
 
-class PigeonBacklogTest < Test::Unit::TestCase
-  def test_empty_backlog
-    engine = Pigeon::Engine.new
+class PigeonQueueTest < Test::Unit::TestCase
+  def test_empty_queue
+    queue = Pigeon::Queue.new
     
-    backlog = Pigeon::Backlog.new
+    assert queue.empty?
+    assert_equal 0, queue.length
     
-    assert backlog.empty?
-    assert backlog.running?
-    assert !backlog.paused?
-    assert !backlog.stopped?
+    assert_equal nil, queue.pop
+  end
+  
+  def test_queue_cycling
+    queue = Pigeon::Queue.new
     
-    backlog.pause!
+    task = Pigeon::Task.new
     
-    assert !backlog.running?
-    assert backlog.paused?
-    assert !backlog.stopped?
+    queue << task
     
-    tasks = [ ]
-
-    1000.times do
-      task = Pigeon::Task.new(engine)
-      
-      tasks << task
-      backlog << task
-    end
+    assert_equal 1, queue.length
+    assert !queue.empty?
     
-    assert_equal 1000, tasks.count
-    assert_equal 0, backlog.processors_count
-    assert_equal 1000, backlog.queue_size
-    
-    backlog.run!
-    
-    sleep(1)
-
-    assert_equal 1000, tasks.count
-    assert_equal 0, backlog.processors_count
-    assert_equal 1000, backlog.queue_size
+    found_task = queue.pop
   end
 end

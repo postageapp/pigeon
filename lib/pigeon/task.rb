@@ -69,9 +69,8 @@ class Pigeon::Task
     @priority ||= Time.now.to_f
   end
   
-  # Ranks tasks by priority.
-  def <=>(task)
-    self.priority <=> task.priority
+  def inspect
+    "<#{self.class}\##{self.object_id}>"
   end
   
 protected

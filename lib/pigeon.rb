@@ -8,6 +8,8 @@ module Pigeon
   autoload(:OptionAccessor, 'pigeon/option_accessor')
   autoload(:Pidfile, 'pigeon/pidfile')
   autoload(:Processor, 'pigeon/processor')
+  autoload(:Queue, 'pigeon/queue')
+  autoload(:Scheduler, 'pigeon/scheduler')
   autoload(:Support, 'pigeon/support')
   autoload(:Task, 'pigeon/task')
 end
