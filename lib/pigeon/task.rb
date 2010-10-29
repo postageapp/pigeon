@@ -78,6 +78,10 @@ class Pigeon::Task
     "<#{self.class}\##{self.object_id}>"
   end
   
+  def <=>(task)
+    self.priority <=> task.priority
+  end
+  
 protected
   def run_state!(state)
     # Grab the current state and save it here, as it may switch at any time

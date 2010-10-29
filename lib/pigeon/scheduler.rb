@@ -25,8 +25,6 @@ class Pigeon::Scheduler
       else
         { nil => [ queues ] }
       end
-
-    @processors =
   end
   
   def run!
