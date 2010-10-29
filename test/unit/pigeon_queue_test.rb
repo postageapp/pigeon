@@ -53,6 +53,8 @@ class PigeonQueueTest < Test::Unit::TestCase
       queue << TaggedTask.new(engine, n)
     end
     
+    assert_equal (0..9).to_a, tasks.to_a.collect(&:tag)
+    
     assert_equal tasks[0], queue.peek
 
     selected_task = queue.peek do |task|

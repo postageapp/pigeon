@@ -70,12 +70,13 @@ class PigeonProcessorTest < Test::Unit::TestCase
 
   def test_multiple_processors
     queue = Pigeon::Queue.new
+    count = 10000
     
-    5000.times do |n|
+    count.times do |n|
       queue << TaggedTask.new(engine, n)
     end
     
-    assert_equal 5000, queue.length
+    assert_equal count, queue.length
     
     processors = (0..9).to_a.collect do
       Pigeon::Processor.new(queue)

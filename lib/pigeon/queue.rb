@@ -41,17 +41,23 @@ class Pigeon::Queue
 
   # == Instance Methods =====================================================
 
-  def initialize
+  def initialize(&block)
     @filter_lock = Mutex.new
     @observer_lock = Mutex.new
 
-    @tasks = [ ]
     @claimable_task = { }
     @filters = self.class.filters.dup
     @observers = { }
     @next_task = { }
-    @sort_by = :priority.to_proc
     @insert_backlog = [ ]
+    
+    if (block_given?)
+      @sort_by = block
+    else
+      @sort_by = lambda { |a,b| a.priority <=> b.priority }
+    end
+
+    @tasks = Pigeon::SortedArray.new(&@sort_by)
   end
   
   def sort_by(&block)
@@ -59,7 +65,7 @@ class Pigeon::Queue
 
     @sort_by = block
     @filter_lock.synchronize do
-      @tasks = @tasks.sort_by(&@sort_by)
+      @tasks = Pigeon::SortedArray.new(&@sort_by) + @tasks
       
       @next_task = { }
     end
@@ -133,13 +139,8 @@ class Pigeon::Queue
         # main task queue.
       if (@claimable_task.delete(active_task))
         @filter_lock.synchronize do
-          task_sort_by = @sort_by.call(active_task)
-          insert_index = @tasks.find_index do |queued_task|
-            @sort_by.call(queued_task) > task_sort_by
-          end
-
-          @tasks.insert(insert_index || -1, active_task)
-
+          @tasks << active_task
+          
           # Update the next task slots for all of the unassigned filters and
           # trigger observer callbacks as required.
           @next_task.each do |filter_name, next_task|
@@ -176,7 +177,7 @@ class Pigeon::Queue
     else
       @next_task[filter_name] ||= begin
         @filter_lock.synchronize do
-          filter_proc = @filters[filter_name] 
+          filter_proc = @filters[filter_name]
       
           filter_proc and @tasks.find(&filter_proc)
         end
@@ -210,7 +211,11 @@ class Pigeon::Queue
         if (block_given?)
           @tasks.find(&block)
         else
-          peek(filter_name)
+          @next_task[filter_name] || begin
+            filter_proc = @filters[filter_name]
+
+            filter_proc and @tasks.find(&filter_proc)
+          end
         end
     
       if (task)
@@ -269,6 +274,12 @@ class Pigeon::Queue
     end
   end
   alias_method :count, :length
+  
+  def to_a
+    @filter_lock.synchronize do
+      @tasks.dup
+    end
+  end
   
 protected
   def assign_next_task(filter_name)

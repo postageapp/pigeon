@@ -5,6 +5,8 @@ class Pigeon::Task
   
   attr_reader :state
   attr_reader :exception
+  attr_reader :created_at
+  attr_reader :started_at
 
   # == Class Methods ========================================================
 
@@ -24,6 +26,7 @@ class Pigeon::Task
   
   def initialize(engine = nil)
     @engine = engine
+    @created_at = Time.now
     
     after_initialized
   end
@@ -35,6 +38,7 @@ class Pigeon::Task
     @callback = callback if (block_given?)
     
     @state = self.class.initial_state
+    @started_at = Time.now
 
     run_state!(@state)
   end
@@ -67,7 +71,7 @@ class Pigeon::Task
   # Returns a numerical priority order. If redefined in a subclass,
   # should return a comparable value.
   def priority
-    @priority ||= Time.now.to_f
+    @created_at
   end
   
   def inspect

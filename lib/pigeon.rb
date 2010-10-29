@@ -10,6 +10,7 @@ module Pigeon
   autoload(:Processor, 'pigeon/processor')
   autoload(:Queue, 'pigeon/queue')
   autoload(:Scheduler, 'pigeon/scheduler')
+  autoload(:SortedArray, 'pigeon/sorted_array')
   autoload(:Support, 'pigeon/support')
   autoload(:Task, 'pigeon/task')
 end
