@@ -34,6 +34,7 @@ class PigeonQueueTest < Test::Unit::TestCase
     
     assert_equal task, queue << task
     
+    assert queue.peek
     assert_equal 1, queue.length
     assert !queue.empty?
     
@@ -127,13 +128,16 @@ class PigeonQueueTest < Test::Unit::TestCase
     assert_equal odd_1, added_odd
 
     claimed_task = nil
-    still_ran = false
+    has_run = false
     
     queue.observe(:odd) do |task|
       claimed_task = queue.claim(task)
-      still_ran = true
+      has_run = true
     end
     
+    # Observer callbacks are not triggered on existing data, only on new
+    # insertions.
+    assert_equal false, has_run
     assert_equal nil, claimed_task
     assert_equal 7, queue.length
     assert_equal 1, queue.length(:odd)
@@ -146,10 +150,44 @@ class PigeonQueueTest < Test::Unit::TestCase
 
     odd_2 = queue << TaggedTask.new(engine, 13)
     
-    assert_equal true, still_ran
+    # Adding a task that matches the filter, but when there is already a
+    # backlog does not trigger the callback.
+    assert_equal nil, claimed_task
+    assert_equal false, has_run
+    
+    # Clear out all of the odd entries.
+    queue.pull(:odd)
+
+    queue << TaggedTask.new(engine, 14)
+
+    assert_equal nil, claimed_task
+    assert_equal false, has_run
+
+    odd_2 = queue << TaggedTask.new(engine, 15)
+    
     assert_equal odd_2, claimed_task
+    assert_equal true, has_run
 
     assert_equal 8, queue.length
-    assert_equal 1, queue.length(:odd)
+    assert_equal 0, queue.length(:odd)
+  end
+  
+  def test_can_add_during_observe
+    queue = Pigeon::Queue.new
+    
+    queue.observe do |task|
+      if (task.tag < 10)
+        queue.claim(task)
+
+        queue << TaggedTask.new(engine, task.tag + 1)
+      end
+    end
+    
+    queue << TaggedTask.new(engine, 0)
+
+    assert queue.peek
+    assert_equal 10, queue.peek.tag
+    assert_equal 1, queue.length
+    assert queue.peek
   end
 end
