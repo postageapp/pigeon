@@ -18,11 +18,9 @@ class Pigeon::Processor
     
     @queue.observe do |task|
       @lock.synchronize do
-        return if (@task)
-      
-        if (@filter.call(task))
+        if (!@task and @filter.call(task))
           @task = queue.claim(task)
-        
+      
           @task.run! do
             switch_to_next_task!
           end
