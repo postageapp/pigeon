@@ -150,13 +150,15 @@ class PigeonQueueTest < Test::Unit::TestCase
 
     odd_2 = queue << TaggedTask.new(engine, 13)
     
-    # Adding a task that matches the filter, but when there is already a
-    # backlog does not trigger the callback.
-    assert_equal nil, claimed_task
-    assert_equal false, has_run
+    # Adding a task that matches the filter triggers the callback.
+    assert_equal odd_2, claimed_task
+    assert_equal true, has_run
     
     # Clear out all of the odd entries.
     queue.pull(:odd)
+    
+    claimed_task = nil
+    has_run = false
 
     queue << TaggedTask.new(engine, 14)
 

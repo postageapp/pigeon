@@ -7,6 +7,14 @@ class Pigeon::Queue
   end
   
   class TaskNotQueued < Exception
+    def initialize(task = nil)
+      @task = task
+    end
+    
+    def inspect
+      "Task #{@task.inspect} not queued."
+    end
+    alias_method :to_s, :inspect
   end
 
   # == Extensions ===========================================================
@@ -97,27 +105,25 @@ class Pigeon::Queue
         @claimable_task[active_task] = true
       end
     
-      @observer_lock.synchronize do
-        @observers.each do |filter_name, list|
-          # Skip if there is a task scheduled in this slot, something that
-          # indicates all the observers have previously passed on it.
-          next if (@next_task[filter_name])
-        
-          # Check if this task matches the filter restrictions, and if it
-          # does then call the observer chain in order.
-          if (@filters[filter_name].call(active_task))
-            @observers[filter_name].each do |proc|
-              case (proc.arity)
-              when 2
-                proc.call(self, active_task)
-              else
-                proc.call(active_task)
-              end
+      unless (@observers.empty?)
+        @observer_lock.synchronize do
+          @observers.each do |filter_name, list|
+            # Check if this task matches the filter restrictions, and if it
+            # does then call the observer chain in order.
+            if (@filters[filter_name].call(active_task))
+              @observers[filter_name].each do |proc|
+                case (proc.arity)
+                when 2
+                  proc.call(self, active_task)
+                else
+                  proc.call(active_task)
+                end
 
-              # An observer callback has the opportunity to claim a task,
-              # and if it does, the claimable task flag will be false. Loop
-              # only while the task is claimable.
-              break unless (@claimable_task[active_task])
+                # An observer callback has the opportunity to claim a task,
+                # and if it does, the claimable task flag will be false. Loop
+                # only while the task is claimable.
+                break unless (@claimable_task[active_task])
+              end
             end
           end
         end
@@ -199,20 +205,26 @@ class Pigeon::Queue
   end
 
   def pop(filter_name = nil, &block)
-    popped_task =
-      if (block_given?)
-        @filter_lock.synchronize do
+    @filter_lock.synchronize do
+      task =
+        if (block_given?)
           @tasks.find(&block)
+        else
+          peek(filter_name)
         end
-      else
-        peek(filter_name)
-      end
     
-    if (popped_task)
-      claim(popped_task)
-    end
+      if (task)
+        @tasks.delete(task)
 
-    popped_task
+        @next_task.each do |filter_name, next_task|
+          if (task == next_task)
+            @next_task[filter_name] = nil
+          end
+        end
+      end
+
+      task
+    end
   end
   
   def claim(task)
@@ -231,6 +243,12 @@ class Pigeon::Queue
     end
       
     task
+  end
+
+  def exist?(task)
+    @filter_lock.synchronize do
+      @tasks.exist?(task)
+    end
   end
   
   def empty?(filter_name = nil, &block)

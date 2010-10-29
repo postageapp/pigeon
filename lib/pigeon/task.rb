@@ -22,7 +22,7 @@ class Pigeon::Task
 
   # == Instance Methods =====================================================
   
-  def initialize(engine)
+  def initialize(engine = nil)
     @engine = engine
     
     after_initialized
@@ -30,7 +30,8 @@ class Pigeon::Task
   
   # Kicks off the task. An optional callback is executed just before each
   # state is excuted and is passed the state name as a symbol.
-  def run!(&callback)
+  def run!(engine = nil, &callback)
+    @engine = engine if (engine)
     @callback = callback if (block_given?)
     
     @state = self.class.initial_state

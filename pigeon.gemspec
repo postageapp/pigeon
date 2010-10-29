@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{pigeon}
-  s.version = "0.3.0"
+  s.version = "0.4.0"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["tadman"]
-  s.date = %q{2010-10-19}
+  s.date = %q{2010-10-29}
   s.default_executable = %q{launcher.example}
   s.description = %q{Pigeon is a simple way to get started building an EventMachine engine that's intended to run as a background job.}
   s.email = %q{github@tadman.ca}
@@ -27,20 +27,28 @@ Gem::Specification.new do |s|
      "VERSION",
      "bin/launcher.example",
      "lib/pigeon.rb",
+     "lib/pigeon/dispatcher.rb",
      "lib/pigeon/engine.rb",
      "lib/pigeon/launcher.rb",
      "lib/pigeon/logger.rb",
      "lib/pigeon/option_accessor.rb",
      "lib/pigeon/pidfile.rb",
+     "lib/pigeon/processor.rb",
      "lib/pigeon/queue.rb",
+     "lib/pigeon/scheduler.rb",
      "lib/pigeon/support.rb",
+     "lib/pigeon/task.rb",
      "pigeon.gemspec",
      "test/helper.rb",
-     "test/test_pigeon.rb",
-     "test/test_pigeon_engine.rb",
-     "test/test_pigeon_launcher.rb",
-     "test/test_pigeon_option_accessor.rb",
-     "test/test_pigeon_queue.rb"
+     "test/unit/pigeon_backlog_test.rb",
+     "test/unit/pigeon_dispatcher_test.rb",
+     "test/unit/pigeon_engine_test.rb",
+     "test/unit/pigeon_launcher_test.rb",
+     "test/unit/pigeon_option_accessor_test.rb",
+     "test/unit/pigeon_processor_test.rb",
+     "test/unit/pigeon_queue_test.rb",
+     "test/unit/pigeon_task_test.rb",
+     "test/unit/pigeon_test.rb"
   ]
   s.homepage = %q{http://github.com/tadman/pigeon}
   s.rdoc_options = ["--charset=UTF-8"]
@@ -49,11 +57,15 @@ Gem::Specification.new do |s|
   s.summary = %q{Simple daemonized EventMachine engine framework with plug-in support}
   s.test_files = [
     "test/helper.rb",
-     "test/test_pigeon.rb",
-     "test/test_pigeon_engine.rb",
-     "test/test_pigeon_launcher.rb",
-     "test/test_pigeon_option_accessor.rb",
-     "test/test_pigeon_queue.rb"
+     "test/unit/pigeon_backlog_test.rb",
+     "test/unit/pigeon_dispatcher_test.rb",
+     "test/unit/pigeon_engine_test.rb",
+     "test/unit/pigeon_launcher_test.rb",
+     "test/unit/pigeon_option_accessor_test.rb",
+     "test/unit/pigeon_processor_test.rb",
+     "test/unit/pigeon_queue_test.rb",
+     "test/unit/pigeon_task_test.rb",
+     "test/unit/pigeon_test.rb"
   ]
 
   if s.respond_to? :specification_version then

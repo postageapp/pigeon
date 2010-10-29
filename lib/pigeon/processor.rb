@@ -1,82 +1,54 @@
 class Pigeon::Processor
   # == Constants ============================================================
 
-  # == Constants ============================================================
+  # == Properties ===========================================================
+  
+  attr_reader :task
 
   # == Class Methods ========================================================
 
   # == Instance Methods =====================================================
   
-  def initialize
-    @semaphore = Mutex.new
-
-    @queued_tasks = [ ]
-    @active_tasks = { }
+  def initialize(queue, &filter)
+    @lock = Mutex.new
+    @filter = filter || lambda { |task| true }
+    @queue = queue
     
-    @state = :running
-
-    @limits = [ ]
+    switch_to_next_task!
     
-    yield(self) if (block_given?)
-  end
-  
-  # Adds a task to the backlog. Will be processed in priority order if
-  # there is at least one available processor.
-  def <<(task)
-    @semaphore.synchronize do
-      if (@active_tasks.length < )
-      @queued_tasks << task
-    end
-  end
-  alias_method :push, :<<
-  
-  def remove(*tasks)
-    @semaphore.synchronize do
-      @queued_tasks.delete(*tasks)
+    @queue.observe do |task|
+      @lock.synchronize do
+        return if (@task)
+      
+        if (@filter.call(task))
+          @task = queue.claim(task)
+        
+          @task.run! do
+            switch_to_next_task!
+          end
+        end
+      end
     end
   end
   
-  def empty?
-    @queued_tasks.empty? and @active_tasks.empty?
+  def accept?(task)
+    @filter.call(task)
   end
   
-  def run!
-    @state = :running
+  def task?
+    !!@task
   end
   
-  def pause!
-    @state = :paused
-  end
-  
-  def stop!
-    @state = :stopped
-  end
-  
-  def running?
-    @state == :running
-  end
-  
-  def paused?
-    @state == :paused
-  end
-  
-  def stopped?
-    @state == :stopped
-  end
-  
-  def queue_size
-    @queued_tasks.length
-  end
+protected
+  def switch_to_next_task!
+    @lock.synchronize do
+      @task = nil
 
-  def processors_count
-    @processors.length
-  end
-  
-  def limit(count, &block)
-    if (block_given?)
-      @limits << [ count, block, @active_tasks.count(&block) ]
-    else
-      @limits << [ count, lambda { true }, @active_tasks.count, :default ]
+      if (@task = @queue.pop(&@filter))
+        @task.run! do
+          switch_to_next_task!
+        end
+      end
     end
   end
 end
