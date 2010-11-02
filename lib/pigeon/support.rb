@@ -1,3 +1,5 @@
+require 'digest/sha1'
+
 module Pigeon::Support
   # Uses the double-fork method to create a fully detached background
   # process. Returns the process ID of the created process. May throw an
@@ -30,6 +32,19 @@ module Pigeon::Support
     end
   end
     
+  # Returns a unique 160-bit identifier for this engine expressed as a 40
+  # character hexadecimal string. The first 32-bit sequence is a timestamp
+  # so these numbers increase over time and can be used to identify when
+  # a particular instance was launched.
+  def unique_id
+    '%8x%s' % [
+      Time.now.to_i,
+      Digest::SHA1.hexdigest(
+        '%.8f%8x' % [ Time.now.to_f, rand(1 << 32) ]
+      )[0, 32]
+    ]
+  end
+
   # Make all methods callable directly without having to include it
   extend self
 end

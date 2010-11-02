@@ -26,6 +26,8 @@ class PigeonProcessorTest < Test::Unit::TestCase
     assert_equal false, processor.task?
     
     assert_equal true, processor.accept?(Pigeon::Task.new(engine))
+    
+    assert processor.id
   end
   
   def test_simple_filter
@@ -82,7 +84,7 @@ class PigeonProcessorTest < Test::Unit::TestCase
       Pigeon::Processor.new(queue)
     end
     
-    assert_eventually(5) do
+    assert_eventually(10) do
       queue.empty?
     end
     

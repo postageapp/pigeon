@@ -4,12 +4,14 @@ class Pigeon::Processor
   # == Properties ===========================================================
   
   attr_reader :task
+  attr_reader :id
 
   # == Class Methods ========================================================
 
   # == Instance Methods =====================================================
   
   def initialize(queue, &filter)
+    @id = Pigeon::Support.unique_id
     @lock = Mutex.new
     @filter = filter || lambda { |task| true }
     @queue = queue

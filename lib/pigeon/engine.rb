@@ -1,6 +1,5 @@
 require 'eventmachine'
 require 'socket'
-require 'digest/sha1'
 
 class Pigeon::Engine
   # == Submodules ===========================================================
@@ -40,6 +39,8 @@ class Pigeon::Engine
       /var/log
       /tmp
     ].freeze
+    
+  attr_reader :id
 
   # == Constants ============================================================
   
@@ -180,6 +181,8 @@ class Pigeon::Engine
   # == Instance Methods =====================================================
 
   def initialize(options = nil)
+    @id = Pigeon::Support.unique_id
+
     @options = options || { }
     
     @task_lock = Mutex.new
@@ -196,19 +199,6 @@ class Pigeon::Engine
   # Returns the hostname of the system this engine is running on.
   def host
     Socket.gethostname
-  end
-
-  # Returns a unique 160-bit identifier for this engine expressed as a 40
-  # character hexadecimal string. The first 32-bit sequence is a timestamp
-  # so these numbers increase over time and can be used to identify when
-  # a particular instance was launched.
-  def id
-    @id ||= '%8x%s' % [
-      Time.now.to_i,
-      Digest::SHA1.hexdigest(
-        '%.8f%8x' % [ Time.now.to_f, rand(1 << 32) ]
-      )[0, 32]
-    ]
   end
 
   # Handles the run phase of the engine, triggers the before_start and
