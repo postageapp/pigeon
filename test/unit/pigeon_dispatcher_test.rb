@@ -8,7 +8,7 @@ class PigeonDispatcherTest < Test::Unit::TestCase
     
     checks = { }
     
-    count = 1000
+    count = 100
     
     count.times do |n|
       dispatcher.perform do
@@ -24,7 +24,9 @@ class PigeonDispatcherTest < Test::Unit::TestCase
       end
     end
     
-    dispatcher.wait!
+    assert_timeout(10) do
+      dispatcher.wait!
+    end
 
     assert_equal 0, dispatcher.backlog_size
     assert_equal 0, dispatcher.thread_count

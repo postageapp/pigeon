@@ -62,14 +62,16 @@ class Pigeon::Dispatcher
   
   # Waits until all operations have completed, including the backlog.
   def wait!
-    ThreadsWait.new(@threads).join
+    while (!@threads.empty?)
+      ThreadsWait.new(@threads).join
+    end
   end
   
 protected
   def create_thread
     @threads << Thread.new do
       Thread.current.abort_on_exception = true
-      
+    
       begin
         while (block = @backlog.pop)
           begin
@@ -78,11 +80,13 @@ protected
             puts "#{e.class}: #{e} #{e.backtrace.join("\n")}"
             @exceptions << e
           end
-          
+        
           Thread.pass
         end
       ensure
-        @threads.delete(Thread.current)
+        @sempaphore.synchronize do
+          @threads.delete(Thread.current)
+        end
       end
     end
   end
