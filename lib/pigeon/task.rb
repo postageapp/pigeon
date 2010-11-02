@@ -4,6 +4,7 @@ class Pigeon::Task
   # == Properties ===========================================================
   
   attr_reader :state
+  attr_reader :engine
   attr_reader :exception
   attr_reader :created_at
   attr_reader :started_at

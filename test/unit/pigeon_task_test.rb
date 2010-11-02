@@ -62,6 +62,8 @@ class PigeonTaskTest < Test::Unit::TestCase
     assert_equal :finished, task.state
 
     assert_equal nil, task.exception
+    
+    assert_equal engine.object_id, task.engine.object_id
   end
   
   def test_example_task
