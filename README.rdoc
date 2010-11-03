@@ -47,12 +47,32 @@ An example would look like:
     gem 'pigeon'
 
     # Adjust search path to include the ../lib directory
-    $LOAD_PATH << File.expand_path(File.join(*%w[ .. lib ]), File.dirname(__FILE__))
+    $LOAD_PATH << File.expand_path(
+      File.join(*%w[ .. lib ]), File.dirname(__FILE__)
+    )
 
     # Use Pigeon::Launcher to launch your own engine by replacing
     # the parameter Pigeon::Engine with your specific subclass.
     Pigeon::Launcher.new(Pigeon::Engine).handle_args(ARGV)
     
+== Components
+
+There are several key components used by Pigeon to create an event-driven
+engine.
+
+=== Pigeon::Dispatcher
+
+The dispatcher functions as a thread pool for processing small, discrete
+operations. These threads are created on demand and destroyed when no longer
+in use. By limiting the number of threads a pool can contain it is possible
+to schedule sequential operations, manage control over a single shared
+resource, or to run through large lists of operations in parallel.
+
+=== Pigeon::SortedArray
+
+This utility class provides a simple self-sorting array. This is used as a
+priority queue within the Pigeon::Queue.
+
 == Status
 
 This engine is currently in development.

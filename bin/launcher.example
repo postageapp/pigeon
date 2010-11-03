@@ -1,4 +1,19 @@
 #!/usr/bin/env ruby
+#
+# launcher    Pigeon launcher
+#
+# chkconfig: - 90 10
+# description: This is an example of a Pigeon launcher.
+# processname: launcher
+# pidfile: /var/run/pigeon.pid
+#
+### BEGIN INIT INFO
+# Provides: pigeon
+# Required-Start: $local_fs $remote_fs $network $named
+# Required-Stop: $local_fs $remote_fs $network
+# Short-Description: start and stop the Pigeon engine
+# Description: This is an example of a Pigeon launcher.
+### END INIT INFO
 
 $LOAD_PATH << File.expand_path(File.join(*%w[ .. lib ]), File.dirname(__FILE__))
 require 'pigeon'

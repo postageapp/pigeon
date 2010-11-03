@@ -8,6 +8,10 @@ class Pigeon::SortedArray < Array
 
   # == Instance Methods =====================================================
   
+  # Creates a new sorted array with an optional sort method supplied as
+  # a block. The sort method supplied should accept two arguments that are
+  # objects in the array to be compared and should return -1, 0, or 1 based
+  # on their sorting order. By default the comparison performed is <=>
   def initialize(&sort_method)
     sort_method ||= lambda { |a,b| a <=> b }
     
@@ -22,6 +26,8 @@ class Pigeon::SortedArray < Array
       end
   end
   
+  # Adds an object to the array by inserting it into the appropriate sorted
+  # location directly.
   def <<(object)
     low = 0
     high = length
@@ -43,6 +49,7 @@ class Pigeon::SortedArray < Array
     insert(low, object)
   end
   
+  # Combines another array with this one and returns the sorted result.
   def +(array)
     self.class[*super(array).sort(&@sort_method)]
   end
