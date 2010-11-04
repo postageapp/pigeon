@@ -241,7 +241,7 @@ class Pigeon::Engine
     
     return if (@task_locks[task_name].locked?)
     
-    @task_lock[task_name].synchronize do
+    @task_locks[task_name].synchronize do
       yield if (block_given?)
     end
   end
