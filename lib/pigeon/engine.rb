@@ -85,6 +85,8 @@ class Pigeon::Engine
   
   # Launches the engine with the specified options
   def self.launch(options = nil)
+    engine = nil
+    
     EventMachine.run do
       engine = new(options)
       
@@ -94,8 +96,12 @@ class Pigeon::Engine
         engine.terminate
       end
 
+      Pigeon::Engine.register_engine(engine)
+
       engine.run
     end
+
+    Pigeon::Engine.unregister_engine(engine)
   end
   
   def self.pid_file
@@ -176,6 +182,24 @@ class Pigeon::Engine
     
       Pigeon::Logger.new(f)
     end
+  end
+  
+  # Returns a handle to the engine currently running, or nil if no engine is
+  # currently active.
+  def self.default_engine
+    @engines and @engines[0]
+  end
+
+  # Registers the engine as running. The first engine running will show up
+  # as the default engine.
+  def self.register_engine(engine)
+    @engines ||= [ ]
+    @engines << engine
+  end
+  
+  # Removes the engine from the list of running engines.
+  def self.unregister_engine(engine)
+    @engines.delete(engine)
   end
 
   # == Instance Methods =====================================================
@@ -313,12 +337,12 @@ class Pigeon::Engine
 
   # Returns true if the debug option was set, false otherwise.
   def debug?
-    !!@options[:debug]
+    !!self.debug
   end
   
   # Returns true if running in the foreground, false otherwise.
   def foreground?
-    !!@options[:foreground]
+    !!self.foreground
   end
 
 protected

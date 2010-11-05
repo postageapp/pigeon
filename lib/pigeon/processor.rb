@@ -14,10 +14,13 @@ class Pigeon::Processor
     @id = Pigeon::Support.unique_id
     @lock = Mutex.new
     @filter = filter || lambda { |task| true }
-    @queue = queue
     
     switch_to_next_task!
-    
+  end
+  
+  def queue=(queue)
+    @queue = queue
+
     @queue.observe do |task|
       @lock.synchronize do
         if (!@task and @filter.call(task))

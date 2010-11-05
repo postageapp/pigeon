@@ -273,7 +273,7 @@ class Pigeon::Queue
       filter_proc ? @tasks.count(&filter_proc) : nil
     end
   end
-  alias_method :count, :length
+  alias_method :size, :count, :length
   
   def to_a
     @filter_lock.synchronize do

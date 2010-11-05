@@ -79,11 +79,12 @@ class Pigeon::Scheduler
   end
   
   # Returns the number of tasks that have been queued up.
-  def queue_size
-    @queues.inject(0) do |size, (name, queue)|
-      size + queue.size
+  def queue_length
+    @queues.inject(0) do |length, (name, queue)|
+      length + queue.length
     end
   end
+  alias_method :queue_size, :queue_length
 
   # Returns the number of processors that are attached to this scheduler.
   def processors_count

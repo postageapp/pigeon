@@ -26,7 +26,7 @@ class Pigeon::Task
   # == Instance Methods =====================================================
   
   def initialize(engine = nil)
-    @engine = engine
+    @engine = engine || Pigeon::Engine.default_engine
     @created_at = Time.now
     
     after_initialized
