@@ -1,4 +1,9 @@
 class Pigeon::Processor
+  # == Exceptions ===========================================================
+  
+  class AlreadyBoundToQueue < Exception
+  end
+  
   # == Constants ============================================================
 
   # == Properties ===========================================================
@@ -10,15 +15,19 @@ class Pigeon::Processor
 
   # == Instance Methods =====================================================
   
-  def initialize(queue, &filter)
+  def initialize(queue = nil, &filter)
     @id = Pigeon::Support.unique_id
     @lock = Mutex.new
     @filter = filter || lambda { |task| true }
+    
+    self.queue = queue if (queue)
     
     switch_to_next_task!
   end
   
   def queue=(queue)
+    raise AlreadyBoundToQueue, @queue if (@queue)
+    
     @queue = queue
 
     @queue.observe do |task|
