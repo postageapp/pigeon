@@ -49,16 +49,17 @@ class PigeonTaskTest < Test::Unit::TestCase
     
     task = Pigeon::Task.new(engine)
     
-    reported = false
+    reported = 0
     
     task.run! do
-      reported = true
+      reported = 1
     end
 
     assert_eventually(5) do
-      task.finished? and reported
+      task.finished? and reported > 0
     end
     
+    assert_equal 1, reported
     assert_equal :finished, task.state
 
     assert_equal nil, task.exception

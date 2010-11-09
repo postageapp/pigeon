@@ -111,7 +111,8 @@ protected
     
     transition_to_state(:failed) unless (self.failed?)
     
-    after_failed
+    self.after_failed
+    self.after_terminated
   ensure
     after_state(state)
 
@@ -122,6 +123,8 @@ protected
       if (@callback and @callback.arity == 0)
         @callback.call
       end
+      
+      self.after_terminated
     end
   end
 
@@ -164,6 +167,10 @@ protected
 
   # Called just after the task fails.
   def after_failed
+  end
+  
+  # Called after the task finishes or terminates.
+  def after_terminated
   end
 
   # Called when an exception is thrown during processing with the exception
