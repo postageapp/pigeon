@@ -4,6 +4,7 @@ class Pigeon::Task
   # == Properties ===========================================================
   
   attr_reader :state
+  attr_reader :options
   attr_reader :engine
   attr_reader :exception
   attr_reader :created_at
@@ -25,8 +26,13 @@ class Pigeon::Task
 
   # == Instance Methods =====================================================
   
-  def initialize(engine = nil)
-    @engine = engine || Pigeon::Engine.default_engine
+  # Creates a new instance of a Task with a series of options.
+  # * :engine => Engine
+  # Other options can be specified which will persist in the options
+  # accessor.
+  def initialize(options = nil)
+    @options = options ? options.dup : { }
+    @engine = @options.delete(:engine) || Pigeon::Engine.default_engine
     @created_at = Time.now
     
     after_initialized
@@ -34,11 +40,10 @@ class Pigeon::Task
   
   # Kicks off the task. An optional callback is executed just before each
   # state is excuted and is passed the state name as a symbol.
-  def run!(engine = nil, &callback)
-    @engine = engine if (engine)
+  def run!(initial_state = nil, &callback)
     @callback = callback if (block_given?)
     
-    @state = self.class.initial_state
+    @state = initial_state || self.class.initial_state
     @started_at = Time.now
 
     run_state!(@state)

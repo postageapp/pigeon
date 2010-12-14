@@ -44,10 +44,18 @@ class FailingTask < Pigeon::Task
 end
 
 class PigeonTaskTest < Test::Unit::TestCase
+  def setup
+    @engine = Pigeon::Engine.new
+
+    Pigeon::Engine.register_engine(@engine)
+  end
+  
+  def teardown
+    Pigeon::Engine.unregister_engine(@engine)
+  end
+  
   def test_empty_task
-    engine = Pigeon::Engine.new
-    
-    task = Pigeon::Task.new(engine)
+    task = Pigeon::Task.new
     
     reported = 0
     
@@ -64,13 +72,18 @@ class PigeonTaskTest < Test::Unit::TestCase
 
     assert_equal nil, task.exception
     
+    assert_equal @engine.object_id, task.engine.object_id
+  end
+
+  def test_alternate_engine
+    engine = Pigeon::Engine.new
+    task = Pigeon::Task.new(:engine => engine)
+    
     assert_equal engine.object_id, task.engine.object_id
   end
   
   def test_example_task
-    engine = Pigeon::Engine.new
-    
-    task = ExampleTask.new(engine)
+    task = ExampleTask.new
     
     callbacks = [ ]
     
@@ -112,9 +125,7 @@ class PigeonTaskTest < Test::Unit::TestCase
   end
 
   def test_failing_task
-    engine = Pigeon::Engine.new
-    
-    task = FailingTask.new(engine)
+    task = FailingTask.new
     
     reported = false
     
@@ -128,11 +139,20 @@ class PigeonTaskTest < Test::Unit::TestCase
 
     assert task.exception?
   end
+  
+  def test_arbitrary_options
+    options = {
+      :example => 'example1',
+      :optional => 1
+    }.freeze
+    
+    task = Pigeon::Task.new(options)
+    
+    assert_equal options, task.options
+  end
 
   def test_block_notification
-    engine = Pigeon::Engine.new
-    
-    task = Pigeon::Task.new(engine)
+    task = Pigeon::Task.new
 
     states_triggered = [ ]
 
@@ -148,10 +168,8 @@ class PigeonTaskTest < Test::Unit::TestCase
   end
 
   def test_priority_order
-    engine = Pigeon::Engine.new
-    
     tasks = (0..10).collect do
-      task = Pigeon::Task.new(engine)
+      task = Pigeon::Task.new
 
       # Trigger generation of default priority value
       task.priority
