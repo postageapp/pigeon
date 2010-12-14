@@ -30,6 +30,12 @@ class Pigeon::Scheduler
     end
   end
   
+  # Add a single task to the schedule. When subclassing, override the private
+  # enqueue_task method instead.
+  def <<(task)
+    enqueue_task(task)
+  end
+
   # Returns the default queue used for scheduling.
   def default_queue
     @queues[nil]
@@ -76,6 +82,11 @@ class Pigeon::Scheduler
   # Returns true if the scheduler is stopped, false otherwise.
   def stopped?
     @state == :stopped
+  end
+  
+  # Returns true if there are no scheduled tasks, false otherwise.
+  def empty?
+    self.queue_size == 0
   end
   
   # Returns the number of tasks that have been queued up.

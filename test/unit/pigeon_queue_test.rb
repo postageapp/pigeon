@@ -4,8 +4,8 @@ class PigeonQueueTest < Test::Unit::TestCase
   class TaggedTask < Pigeon::Task
     attr_accessor :tag
     
-    def initialize(engine, tag)
-      super(engine)
+    def initialize(tag, options = nil)
+      super(options)
       @tag = tag
     end
     
@@ -14,8 +14,14 @@ class PigeonQueueTest < Test::Unit::TestCase
     end
   end
   
-  def engine
-    @engine ||= Pigeon::Engine.new
+  def setup
+    @engine = Pigeon::Engine.new
+
+    Pigeon::Engine.register_engine(@engine)
+  end
+  
+  def teardown
+    Pigeon::Engine.unregister_engine(@engine)
   end
 
   def test_empty_state
@@ -30,7 +36,7 @@ class PigeonQueueTest < Test::Unit::TestCase
   def test_cycling
     queue = Pigeon::Queue.new
     
-    task = Pigeon::Task.new(engine)
+    task = Pigeon::Task.new
     
     assert_equal task, queue << task
     
@@ -50,7 +56,7 @@ class PigeonQueueTest < Test::Unit::TestCase
     queue = Pigeon::Queue.new
 
     tasks = (0..9).to_a.collect do |n|
-      queue << TaggedTask.new(engine, n)
+      queue << TaggedTask.new(n)
     end
     
     assert_equal (0..9).to_a, tasks.to_a.collect(&:tag)
@@ -83,7 +89,7 @@ class PigeonQueueTest < Test::Unit::TestCase
     assert_equal 0, queue.length(:over_7)
     assert_equal true, queue.empty?(:over_7)
     
-    new_task = queue << TaggedTask.new(engine, 10)
+    new_task = queue << TaggedTask.new(10)
     
     assert_equal new_task, queue.peek(:over_7)
     assert_equal 1, queue.length(:over_7)
@@ -100,7 +106,7 @@ class PigeonQueueTest < Test::Unit::TestCase
     queue = Pigeon::Queue.new
     
     tasks = (0..9).to_a.collect do |n|
-      queue << TaggedTask.new(engine, n)
+      queue << TaggedTask.new(n)
     end
     
     queue.filter(:odd) do |task|
@@ -121,11 +127,11 @@ class PigeonQueueTest < Test::Unit::TestCase
       added_odd = task
     end
     
-    queue << TaggedTask.new(engine, 10)
+    queue << TaggedTask.new(10)
     
     assert_equal nil, added_odd
 
-    odd_1 = queue << TaggedTask.new(engine, 11)
+    odd_1 = queue << TaggedTask.new(11)
     
     assert_equal odd_1, added_odd
 
@@ -144,13 +150,13 @@ class PigeonQueueTest < Test::Unit::TestCase
     assert_equal 7, queue.length
     assert_equal 1, queue.length(:odd)
 
-    queue << TaggedTask.new(engine, 12)
+    queue << TaggedTask.new(12)
     
     assert_equal nil, claimed_task
     assert_equal 8, queue.length
     assert_equal 1, queue.length(:odd)
 
-    odd_2 = queue << TaggedTask.new(engine, 13)
+    odd_2 = queue << TaggedTask.new(13)
     
     # Adding a task that matches the filter triggers the callback.
     assert_equal odd_2, claimed_task
@@ -162,12 +168,12 @@ class PigeonQueueTest < Test::Unit::TestCase
     claimed_task = nil
     has_run = false
 
-    queue << TaggedTask.new(engine, 14)
+    queue << TaggedTask.new(14)
 
     assert_equal nil, claimed_task
     assert_equal false, has_run
 
-    odd_2 = queue << TaggedTask.new(engine, 15)
+    odd_2 = queue << TaggedTask.new(15)
     
     assert_equal odd_2, claimed_task
     assert_equal true, has_run
@@ -183,11 +189,11 @@ class PigeonQueueTest < Test::Unit::TestCase
       if (task.tag < 10)
         queue.claim(task)
 
-        queue << TaggedTask.new(engine, task.tag + 1)
+        queue << TaggedTask.new(task.tag + 1)
       end
     end
     
-    queue << TaggedTask.new(engine, 0)
+    queue << TaggedTask.new(0)
 
     assert queue.peek
     assert_equal 10, queue.peek.tag

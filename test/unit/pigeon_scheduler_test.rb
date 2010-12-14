@@ -4,8 +4,8 @@ class PigeonSchedulerTest < Test::Unit::TestCase
   class TaggedTask < Pigeon::Task
     attr_accessor :tag
     
-    def initialize(engine, tag)
-      super(engine)
+    def initialize(tag, options = nil)
+      super(options)
       @tag = tag
     end
     
@@ -14,14 +14,22 @@ class PigeonSchedulerTest < Test::Unit::TestCase
     end
   end
 
-  def engine
-    @engine ||= Pigeon::Engine.new
+  def setup
+    @engine = Pigeon::Engine.new
+
+    Pigeon::Engine.register_engine(@engine)
+  end
+  
+  def teardown
+    Pigeon::Engine.unregister_engine(@engine)
   end
   
   def test_defaults
     scheduler = Pigeon::Scheduler.new
     
     assert_equal true, scheduler.default_queue.empty?
+    assert_equal 0, scheduler.queue_size
+    assert_equal true, scheduler.empty?
   end
   
   def test_queued
@@ -32,7 +40,7 @@ class PigeonSchedulerTest < Test::Unit::TestCase
     count = 1000
     
     count.times do |n|
-      queue << TaggedTask.new(engine, n)
+      queue << TaggedTask.new(n)
     end
     
     assert_eventually(5) do
@@ -52,8 +60,8 @@ class PigeonSchedulerTest < Test::Unit::TestCase
     
     backlog = [ ]
     count.times do |n|
-      scheduler.add(TaggedTask.new(engine, n * 2 + 1))
-      backlog << TaggedTask.new(engine, n * 2)
+      scheduler.add(TaggedTask.new(n * 2 + 1))
+      backlog << TaggedTask.new(n * 2)
     end
     
     scheduler.add(backlog)

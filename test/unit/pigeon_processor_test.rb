@@ -4,8 +4,8 @@ class PigeonProcessorTest < Test::Unit::TestCase
   class TaggedTask < Pigeon::Task
     attr_accessor :tag
     
-    def initialize(engine, tag)
-      super(engine)
+    def initialize(tag, options = nil)
+      super(options)
       @tag = tag
     end
     
@@ -14,8 +14,14 @@ class PigeonProcessorTest < Test::Unit::TestCase
     end
   end
 
-  def engine
-    @engine ||= Pigeon::Engine.new
+  def setup
+    @engine = Pigeon::Engine.new
+
+    Pigeon::Engine.register_engine(@engine)
+  end
+  
+  def teardown
+    Pigeon::Engine.unregister_engine(@engine)
   end
 
   def test_empty_processor
@@ -25,7 +31,7 @@ class PigeonProcessorTest < Test::Unit::TestCase
     
     assert_equal false, processor.task?
     
-    assert_equal true, processor.accept?(Pigeon::Task.new(engine))
+    assert_equal true, processor.accept?(Pigeon::Task.new)
     
     assert processor.id
   end
@@ -39,12 +45,12 @@ class PigeonProcessorTest < Test::Unit::TestCase
     
     assert_equal false, processor.task?
     
-    queue << TaggedTask.new(engine, 0)
+    queue << TaggedTask.new(0)
     
     assert_equal false, processor.task?
     assert_equal 1, queue.length
 
-    queue << TaggedTask.new(engine, 1)
+    queue << TaggedTask.new(1)
     
     assert_equal true, processor.task?
     assert_equal 1, queue.length
@@ -60,7 +66,7 @@ class PigeonProcessorTest < Test::Unit::TestCase
     queue = Pigeon::Queue.new
     
     100.times do |n|
-      queue << TaggedTask.new(engine, n)
+      queue << TaggedTask.new(n)
     end
     
     processor = Pigeon::Processor.new(queue)
@@ -75,7 +81,7 @@ class PigeonProcessorTest < Test::Unit::TestCase
     count = 10000
     
     count.times do |n|
-      queue << TaggedTask.new(engine, n)
+      queue << TaggedTask.new(n)
     end
     
     assert_equal count, queue.length
