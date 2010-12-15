@@ -5,6 +5,7 @@ class Pigeon::Processor
 
   # == Properties ===========================================================
   
+  attr_accessor :context
   attr_reader :task
   attr_reader :id
 
@@ -15,10 +16,11 @@ class Pigeon::Processor
   # Creates a new processor. An optional queue can be specified in which case
   # the processor will register itself as an observer of that queue. A block
   # can be given to filter the tasks contained in the associated queue.
-  def initialize(queue = nil, &filter)
+  def initialize(queue = nil, context = nil, &filter)
     @id = Pigeon::Support.unique_id
     @lock = Mutex.new
     @filter = filter || lambda { |task| true }
+    @context = context
     
     if (queue)
       self.queue = queue
@@ -68,6 +70,7 @@ protected
       @task = nil
 
       if (@task = @queue.pop(&@filter))
+        @task.context ||= (@context || self)
         @task.run! do
           switch_to_next_task!
         end

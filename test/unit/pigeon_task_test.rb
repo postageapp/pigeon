@@ -140,7 +140,7 @@ class PigeonTaskTest < Test::Unit::TestCase
     assert task.exception?
   end
   
-  def test_arbitrary_options
+  def test_with_context
     options = {
       :example => 'example1',
       :optional => 1
@@ -149,6 +149,10 @@ class PigeonTaskTest < Test::Unit::TestCase
     task = Pigeon::Task.new(options)
     
     assert_equal options, task.context
+    
+    task.context = 'test'
+    
+    assert_equal 'test', task.context
   end
 
   def test_block_notification
