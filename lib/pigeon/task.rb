@@ -4,7 +4,7 @@ class Pigeon::Task
   # == Properties ===========================================================
   
   attr_reader :state
-  attr_reader :options
+  attr_reader :context
   attr_reader :engine
   attr_reader :exception
   attr_reader :created_at
@@ -26,13 +26,13 @@ class Pigeon::Task
 
   # == Instance Methods =====================================================
   
-  # Creates a new instance of a Task with a series of options.
-  # * :engine => Engine
-  # Other options can be specified which will persist in the options
-  # accessor.
-  def initialize(options = nil)
-    @options = options ? options.dup : { }
-    @engine = @options.delete(:engine) || Pigeon::Engine.default_engine
+  # Creates a new instance of a Task with a series of context. An optional
+  # engine parameter indicates which engine this task should be associated
+  # with. An arbitrary context object can be specified which will persist in
+  # the context property.
+  def initialize(context = nil, engine = nil)
+    @context = context
+    @engine = engine || Pigeon::Engine.default_engine
     @created_at = Time.now
     
     after_initialized

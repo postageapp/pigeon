@@ -77,7 +77,7 @@ class PigeonTaskTest < Test::Unit::TestCase
 
   def test_alternate_engine
     engine = Pigeon::Engine.new
-    task = Pigeon::Task.new(:engine => engine)
+    task = Pigeon::Task.new(nil, engine)
     
     assert_equal engine.object_id, task.engine.object_id
   end
@@ -148,7 +148,7 @@ class PigeonTaskTest < Test::Unit::TestCase
     
     task = Pigeon::Task.new(options)
     
-    assert_equal options, task.options
+    assert_equal options, task.context
   end
 
   def test_block_notification
