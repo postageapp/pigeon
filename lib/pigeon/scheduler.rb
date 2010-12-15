@@ -96,6 +96,12 @@ class Pigeon::Scheduler
     end
   end
   alias_method :queue_size, :queue_length
+  
+  # Returns the number of queues that have been defined, including the default
+  # queue if any.
+  def queue_count
+    @queues.length
+  end
 
   # Returns the number of processors that are attached to this scheduler.
   def processors_count

@@ -212,6 +212,9 @@ class Pigeon::Engine
     @task_lock = Mutex.new
     @task_locks = { }
 
+    @task_register_lock = Mutex.new
+    @registered_tasks = { }
+    
     self.logger ||= self.engine_logger
     self.logger.level = Pigeon::Logger::DEBUG if (self.debug?)
     
@@ -343,6 +346,28 @@ class Pigeon::Engine
   # Returns true if running in the foreground, false otherwise.
   def foreground?
     !!self.foreground
+  end
+  
+  # Registers a task with the engine. The given task will then be included
+  # in the list returned by registered_tasks.
+  def register_task(task)
+    @task_register_lock.synchronize do
+      @registered_tasks[task] = task
+    end
+  end
+
+  # Removes a task from the list of tasks registered with this engine.
+  def unregister_task(task)
+    @task_register_lock.synchronize do
+      @registered_tasks.delete(task)
+    end
+  end
+  
+  # Returns a list of tasks that have been registered with the engine.
+  def registered_tasks
+    @task_register_lock.synchronize do
+      @registered_tasks.values
+    end
   end
 
 protected

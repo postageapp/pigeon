@@ -1,9 +1,6 @@
 class Pigeon::Processor
   # == Exceptions ===========================================================
   
-  class AlreadyBoundToQueue < Exception
-  end
-  
   # == Constants ============================================================
 
   # == Properties ===========================================================
@@ -15,22 +12,31 @@ class Pigeon::Processor
 
   # == Instance Methods =====================================================
   
+  # Creates a new processor. An optional queue can be specified in which case
+  # the processor will register itself as an observer of that queue. A block
+  # can be given to filter the tasks contained in the associated queue.
   def initialize(queue = nil, &filter)
     @id = Pigeon::Support.unique_id
     @lock = Mutex.new
     @filter = filter || lambda { |task| true }
     
-    self.queue = queue if (queue)
+    if (queue)
+      self.queue = queue
     
-    switch_to_next_task!
+      switch_to_next_task!
+    end
   end
   
+  # Assigns this processor to a particular queue. If one is already assigned
+  # then the observer callback for that queue will be removed.
   def queue=(queue)
-    raise AlreadyBoundToQueue, @queue if (@queue)
+    if (@queue)
+      @queue.remove_observer(&@claim)
+    end
     
     @queue = queue
 
-    @queue.observe do |task|
+    @claim = lambda do |task|
       @lock.synchronize do
         if (!@task and @filter.call(task))
           @task = queue.claim(task)
@@ -41,12 +47,17 @@ class Pigeon::Processor
         end
       end
     end
+    
+    @queue.observe(&@claim)
   end
   
+  # Returns true if the given task would be accepted by the filter defined
+  # for this processor.
   def accept?(task)
     @filter.call(task)
   end
   
+  # Returns true if a task is currently being processed, false otherwise.
   def task?
     !!@task
   end

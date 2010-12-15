@@ -75,6 +75,41 @@ class PigeonProcessorTest < Test::Unit::TestCase
       queue.empty?
     end
   end
+  
+  def test_reassigning_queues
+    queue_a = Pigeon::Queue.new
+    queue_b = Pigeon::Queue.new
+    
+    processor = Pigeon::Processor.new(queue_a)
+    
+    task_a = TaggedTask.new(0)
+    assert !task_a.finished?
+    
+    queue_a << task_a
+    
+    assert_eventually(1) do
+      task_a.finished?
+    end
+    
+    processor.queue = queue_b
+    
+    task_b = TaggedTask.new(1)
+    assert !task_b.finished?
+
+    queue_b << task_b
+
+    assert_eventually(1) do
+      task_b.finished?
+    end
+    
+    task_c = TaggedTask.new(2)
+
+    queue_a << task_c
+
+    sleep(1)
+    
+    assert_equal false, task_c.finished?
+  end
 
   def test_multiple_processors
     queue = Pigeon::Queue.new

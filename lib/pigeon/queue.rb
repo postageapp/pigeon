@@ -29,18 +29,26 @@ class Pigeon::Queue
 
   # == Class Methods ========================================================
   
+  # Returns the current filter configuration. This is stored as a Hash with
+  # the key being the filter name, the value being the matching block. The
+  # nil key is the default filter which accepts all tasks.
   def self.filters
     @filters ||= {
       nil => lambda { |task| true }
     }
   end
   
+  # Defines a new filter with the given name and uses the supplied block to
+  # evaluate if a task qualifies or not.
   def self.filter(name, &block)
     filters[name] = block
   end
 
   # == Instance Methods =====================================================
 
+  # Creates a new queue. If a block is given, it is used to compare two tasks
+  # and order them, so it should take two arguments and return the relative
+  # difference (-1, 0, 1) like Array#sort would work.
   def initialize(&block)
     @filter_lock = Mutex.new
     @observer_lock = Mutex.new
@@ -60,6 +68,8 @@ class Pigeon::Queue
     @tasks = Pigeon::SortedArray.new(&@sort_by)
   end
   
+  # Returns the contents sorted by the given block. The block will be passed
+  # a single Task and the results are sorted by the return value.
   def sort_by(&block)
     raise BlockRequired unless (block_given?)
 
@@ -71,18 +81,34 @@ class Pigeon::Queue
     end
   end
   
+  # Sets up a callback for the queue that will execute the block if new tasks
+  # are added to the queue. If filter_name is specified, this block will be
+  # run for tasks matching that filtered subset.
   def observe(filter_name = nil, &block)
     raise BlockRequired unless (block_given?)
     
     @observer_lock.synchronize do
       @observers[filter_name] ||= [ ]
+
+      @observers[filter_name] << block
     end
 
-    @observers[filter_name] << block
-    
     task = assign_next_task(filter_name)
   end
   
+  # Removes references to the callback function specified. Note that the same
+  # Proc must be passed in, as a block with an identical function will not
+  # be considered equivalent.
+  def remove_observer(filter_name = nil, &block)
+    @observer_lock.synchronize do
+      set = @observers[filter_name]
+
+      set and set.delete(block)
+    end
+  end
+  
+  # Creates a named filter for the queue using the provided block to select
+  # the tasks which should match.
   def filter(filter_name, &block)
     raise BlockRequired unless (block_given?)
 
@@ -93,6 +119,7 @@ class Pigeon::Queue
     assign_next_task(filter_name)
   end
   
+  # Adds a task to the queue.
   def <<(task)
     # If there is an insert operation already in progress, put this task in
     # the backlog for subsequent processing.
@@ -159,6 +186,7 @@ class Pigeon::Queue
     task
   end
   
+  # Iterates over each of the tasks in the queue.
   def each
     @filter_lock.synchronize do
       tasks = @tasks.dup
@@ -169,6 +197,9 @@ class Pigeon::Queue
     end
   end
   
+  # Peeks at the next task in the queue, or if filter_name is provided,
+  # then the next task meeting those filter conditions. An optional block
+  # can also be used to further restrict the qualifying tasks.
   def peek(filter_name = nil, &block)
     if (block_given?)
       @filter_lock.synchronize do
@@ -185,6 +216,9 @@ class Pigeon::Queue
     end
   end
   
+  # Removes all tasks from the queue. If a filter_name is given, then will
+  # only remove tasks matching that filter's conditions. An optional block
+  # can also be used to further restrict the qualifying tasks.
   def pull(filter_name = nil, &block)
     unless (block_given?)
       block = @filters[filter_name]
@@ -205,6 +239,11 @@ class Pigeon::Queue
     end
   end
 
+  # Returns the next task from the queue. If a filter_name is given, then will
+  # only select tasks matching that filter's conditions. An optional block
+  # can also be used to further restrict the qualifying tasks. The task will
+  # be removed from the queue and must be re-inserted if it is to be scheduled
+  # again.
   def pop(filter_name = nil, &block)
     @filter_lock.synchronize do
       task =
@@ -232,6 +271,8 @@ class Pigeon::Queue
     end
   end
   
+  # Claims a task. This is used to indicate that the task will be processed
+  # without having to be inserted into the queue.
   def claim(task)
     @filter_lock.synchronize do
       if (@claimable_task[task])
@@ -250,12 +291,16 @@ class Pigeon::Queue
     task
   end
 
+  # Returns true if the task is queued, false otherwise.
   def exist?(task)
     @filter_lock.synchronize do
       @tasks.exist?(task)
     end
   end
   
+  # Returns true if the queue is empty, false otherwise. If filter_name is
+  # given, then will return true if there are no matching tasks, false
+  # otherwise. An optional block can further restrict qualifying tasks.
   def empty?(filter_name = nil, &block)
     if (block_given?)
       @filter_lock.synchronize do
@@ -266,6 +311,9 @@ class Pigeon::Queue
     end
   end
   
+  # Returns the number of entries in the queue. If filter_name is given, then
+  # will return the number of matching tasks. An optional block can further
+  # restrict qualifying tasks.
   def length(filter_name = nil, &block)
     filter_proc = @filters[filter_name] 
   
@@ -276,6 +324,7 @@ class Pigeon::Queue
   alias_method :size, :length
   alias_method :count, :length
   
+  # Copies the list of queued tasks to a new Array.
   def to_a
     @filter_lock.synchronize do
       @tasks.dup
