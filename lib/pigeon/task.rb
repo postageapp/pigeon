@@ -38,15 +38,18 @@ class Pigeon::Task
     after_initialized
   end
   
-  # Kicks off the task. An optional callback is executed just before each
+  # Kicks off the task. The processor execurting the task should be supplied
+  # as the first argument. An optional callback is executed just before each
   # state is excuted and is passed the state name as a symbol.
-  def run!(initial_state = nil, &callback)
+  def run!(processor = nil, initial_state = nil, &callback)
     @callback = callback if (block_given?)
     
     @state = initial_state || self.class.initial_state
     @started_at = Time.now
 
+    @processor = processor
     run_state!(@state)
+    @processor = nil
   end
 
   # Returns true if the task is in the finished state, false otherwise.

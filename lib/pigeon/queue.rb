@@ -17,15 +17,9 @@ class Pigeon::Queue
     alias_method :to_s, :inspect
   end
 
-  # == Extensions ===========================================================
-
-  # == Relationships ========================================================
-
-  # == Scopes ===============================================================
-
-  # == Callbacks ============================================================
-
-  # == Validations ==========================================================
+  # == Properties ===========================================================
+  
+  attr_reader :processors
 
   # == Class Methods ========================================================
   
@@ -56,6 +50,7 @@ class Pigeon::Queue
     @claimable_task = { }
     @filters = self.class.filters.dup
     @observers = { }
+    @processors = [ ]
     @next_task = { }
     @insert_backlog = [ ]
     
@@ -105,6 +100,24 @@ class Pigeon::Queue
 
       set and set.delete(block)
     end
+  end
+  
+  # Adds a processor to the queue and adds an observer claim method.
+  def add_processor(processor, &claim)
+    @observer_lock.synchronize do
+      @processors << processor
+    end
+
+    observe(&claim) if (claim)
+  end
+  
+  # Removes a processor from the queue and removes an observer claim method.
+  def remove_processor(processor, &claim)
+    @observer_lock.synchronize do
+      @processors.delete(processor)
+    end
+
+    remove_observer(&claim) if (claim)
   end
   
   # Creates a named filter for the queue using the provided block to select

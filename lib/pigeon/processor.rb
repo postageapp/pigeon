@@ -6,6 +6,7 @@ class Pigeon::Processor
   # == Properties ===========================================================
   
   attr_accessor :context
+  attr_reader :queue
   attr_reader :task
   attr_reader :id
 
@@ -33,24 +34,24 @@ class Pigeon::Processor
   # then the observer callback for that queue will be removed.
   def queue=(queue)
     if (@queue)
-      @queue.remove_observer(&@claim)
+      @queue.remove_processor(self, &@claim)
     end
     
-    @queue = queue
-
-    @claim = lambda do |task|
-      @lock.synchronize do
-        if (!@task and @filter.call(task))
-          @task = queue.claim(task)
+    if (@queue = queue)
+      @claim = lambda do |task|
+        @lock.synchronize do
+          if (!@task and @filter.call(task))
+            @task = queue.claim(task)
       
-          @task.run! do
-            switch_to_next_task!
+            @task.run!(self) do
+              switch_to_next_task!
+            end
           end
         end
       end
+
+      @queue.add_processor(self, &@claim)
     end
-    
-    @queue.observe(&@claim)
   end
   
   # Returns true if the given task would be accepted by the filter defined
@@ -64,14 +65,17 @@ class Pigeon::Processor
     !!@task
   end
   
+  def inspect
+    "<#{self.class}\##{@id} queue=#{@queue.inspect} task=#{@task} context=#{@context}>"
+  end
+  
 protected
   def switch_to_next_task!
     @lock.synchronize do
       @task = nil
 
       if (@task = @queue.pop(&@filter))
-        @task.context ||= (@context || self)
-        @task.run! do
+        @task.run!(self) do
           switch_to_next_task!
         end
       end

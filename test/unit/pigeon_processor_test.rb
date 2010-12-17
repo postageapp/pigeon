@@ -110,6 +110,19 @@ class PigeonProcessorTest < Test::Unit::TestCase
     
     assert_equal false, task_c.finished?
   end
+  
+  def test_can_unassign_queue_from_processor
+    queue = Pigeon::Queue.new
+    processor = Pigeon::Processor.new(queue)
+    
+    assert_equal queue, processor.queue
+    assert_equal [ processor ], queue.processors
+    
+    processor.queue = nil
+    
+    assert_equal nil, processor.queue
+    assert_equal [ ], queue.processors
+  end
 
   def test_multiple_processors
     queue = Pigeon::Queue.new

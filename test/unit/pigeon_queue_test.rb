@@ -31,6 +31,8 @@ class PigeonQueueTest < Test::Unit::TestCase
     assert_equal true, queue.empty?
     
     assert_equal nil, queue.pop
+    
+    assert_equal [ ], queue.processors
   end
   
   def test_cycling
