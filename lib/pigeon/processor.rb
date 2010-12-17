@@ -77,10 +77,12 @@ protected
       end
       
       @task = nil
-
-      if (@task = @queue.pop(&@filter))
-        @task.run!(self) do
-          switch_to_next_task!
+      
+      if (@queue)
+        if (@task = @queue.pop(&@filter))
+          @task.run!(self) do
+            switch_to_next_task!
+          end
         end
       end
     end
