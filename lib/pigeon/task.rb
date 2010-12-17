@@ -5,6 +5,7 @@ class Pigeon::Task
   
   attr_reader :state
   attr_accessor :context
+  attr_accessor :processor
   attr_reader :engine
   attr_reader :exception
   attr_reader :created_at

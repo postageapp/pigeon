@@ -72,6 +72,10 @@ class Pigeon::Processor
 protected
   def switch_to_next_task!
     @lock.synchronize do
+      if (@task)
+        @task.processor = nil
+      end
+      
       @task = nil
 
       if (@task = @queue.pop(&@filter))
