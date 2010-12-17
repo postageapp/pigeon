@@ -49,7 +49,6 @@ class Pigeon::Task
 
     @processor = processor
     run_state!(@state)
-    @processor = nil
   end
 
   # Returns true if the task is in the finished state, false otherwise.
@@ -133,6 +132,7 @@ protected
       end
       
       self.after_terminated
+      @processor = nil
     end
   end
 
