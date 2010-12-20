@@ -134,6 +134,10 @@ class Pigeon::Queue
   
   # Adds a task to the queue.
   def <<(task)
+    unless (task.is_a?(Pigeon::Task))
+      raise "Cannot add task of class #{task.class} to #{self.class}"
+    end
+    
     # If there is an insert operation already in progress, put this task in
     # the backlog for subsequent processing.
     
