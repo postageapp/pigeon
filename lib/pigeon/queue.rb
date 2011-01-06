@@ -151,9 +151,7 @@ class Pigeon::Queue
     while (active_task) do
       # Set the claimable task flag for this task since it is not yet in the
       # actual task queue.
-      @filter_lock.synchronize do
-        @claimable_task[active_task] = true
-      end
+      @claimable_task[active_task] = true
     
       unless (@observers.empty?)
         @observer_lock.synchronize do

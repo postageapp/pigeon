@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{pigeon}
-  s.version = "0.4.7"
+  s.version = "0.4.8"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["tadman"]
-  s.date = %q{2010-12-17}
+  s.date = %q{2011-01-06}
   s.default_executable = %q{launcher.example}
   s.description = %q{Pigeon is a simple way to get started building an EventMachine engine that's intended to run as a background job.}
   s.email = %q{github@tadman.ca}
@@ -53,7 +53,7 @@ Gem::Specification.new do |s|
      "test/unit/pigeon_task_test.rb",
      "test/unit/pigeon_test.rb"
   ]
-  s.homepage = %q{http://github.com/tadman/pigeon}
+  s.homepage = %q{http://github.com/twg/pigeon}
   s.rdoc_options = ["--charset=UTF-8"]
   s.require_paths = ["lib"]
   s.rubygems_version = %q{1.3.7}

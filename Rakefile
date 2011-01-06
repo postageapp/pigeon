@@ -8,7 +8,7 @@ begin
     gem.summary = %Q{Simple daemonized EventMachine engine framework with plug-in support}
     gem.description = %Q{Pigeon is a simple way to get started building an EventMachine engine that's intended to run as a background job.}
     gem.email = "github@tadman.ca"
-    gem.homepage = "http://github.com/tadman/pigeon"
+    gem.homepage = "http://github.com/twg/pigeon"
     gem.authors = %w[ tadman ]
     gem.add_development_dependency 'eventmachine'
   end
