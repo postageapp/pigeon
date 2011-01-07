@@ -42,6 +42,7 @@ class Pigeon::SortedArray < Array
       elsif (comparison > 0)
         low = mid + 1
       else
+        low = mid
         break
       end
     end

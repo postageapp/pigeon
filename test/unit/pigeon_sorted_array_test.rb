@@ -21,13 +21,15 @@ class PigeonSortedArrayTest < Test::Unit::TestCase
   def test_does_sorting
     array = Pigeon::SortedArray.new
     
-    test_array = (0..100).to_a.reverse
+    test_array = [2, 2, 2, 2, 3, 3, 3]
     
-    array += test_array
+    test_array.each do |i| 
+      array << i
+    end
     
-    assert_equal (0..100).to_a, array
+    assert_equal [2, 2, 2, 2, 3, 3, 3], array.to_a
   end
-
+  
   def test_does_sorting_with_insertion_in_order
     array = Pigeon::SortedArray.new
 
