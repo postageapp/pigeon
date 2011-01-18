@@ -60,6 +60,29 @@ class Pigeon::Engine
     @name or self.to_s.gsub(/::/, ' ')
   end
   
+  # Returns the custom process name for this engine or nil if not assigned.
+  def self.process_name
+    @process_name
+  end
+  
+  # Assigns the process name. This will be applied only when the engine is
+  # started.
+  def self.process_name=(value)
+    @process_name = value
+  end
+
+  # Returns the user this process should run as, or nil if no particular
+  # user is required. This will be applied after the engine has been started
+  # and the after_start call has been triggered.
+  def self.user
+    @user
+  end
+  
+  # Assigns the user this process should run as, given a username.
+  def self.user=(value)
+    @user = value
+  end
+  
   # Returns the name of the PID file to use. The full path to the file
   # is specified elsewhere.
   def self.pid_file_name
@@ -231,6 +254,8 @@ class Pigeon::Engine
   # Handles the run phase of the engine, triggers the before_start and
   # after_start events accordingly.
   def run
+    assign_process_name!
+
     run_chain(:before_start)
 
     STDOUT.sync = true
@@ -238,6 +263,8 @@ class Pigeon::Engine
     logger.info("Engine \##{id} Running")
     
     run_chain(:after_start)
+    
+    switch_to_effective_user! if (self.class.user)
   end
 
   # Used to periodically execute a task or block. When giving a task name,
@@ -373,5 +400,28 @@ class Pigeon::Engine
 protected
   def run_chain(chain_name)
     self.class.run_chain(chain_name, self)
+  end
+  
+  def switch_to_effective_user!
+    require 'etc'
+    
+    requested_user = Etc.getpwnam(self.class.user)
+    requested_uid = (requested_user and requested_user.uid)
+    
+    if (Process.uid != requested_uid)
+      switched_to_uid = Process::UID.change_privilege(requested_uid)
+      
+      unless (requested_uid == switched_to_uid)
+        STDERR.puts "Could not switch to effective UID #{uid} (#{self.class.user})"
+        exit(-9)
+      end
+    end
+  end
+  
+  def assign_process_name!
+    puts self.class.process_name.inspect
+    if (self.class.process_name)
+      $0 = self.class.process_name
+    end
   end
 end
