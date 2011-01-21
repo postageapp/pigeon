@@ -419,7 +419,6 @@ protected
   end
   
   def assign_process_name!
-    puts self.class.process_name.inspect
     if (self.class.process_name)
       $0 = self.class.process_name
     end
