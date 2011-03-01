@@ -113,7 +113,7 @@ protected
     end
     
   rescue Object => e
-    exeption_received(e)
+    exception_received(e)
   ensure
     after_state(state)
 
@@ -159,7 +159,7 @@ protected
       begin
         yield
       rescue Object => e
-        exeption_received(e)
+        exception_received(e)
       end
     end
   end
