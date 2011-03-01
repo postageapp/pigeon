@@ -311,10 +311,16 @@ class Pigeon::Engine
   end
   
   # Used to defer a block of work for near-immediate execution. Is a 
-  # wrapper around EventMachine#defer and does not perform as well as using
+  # wrapper around EventMachine.defer and does not perform as well as using
   # the alternate dispatch method.
   def defer(&block)
     EventMachine.defer(&block)
+  end
+  
+  # Schedules a block for execution on the main EventMachine thread. This is
+  # a wrapper around the EventMachine.schedule method.
+  def schedule(&block)
+    EventMachine.schedule(&block)
   end
   
   # Shuts down the engine. Will also trigger the before_stop and after_stop
