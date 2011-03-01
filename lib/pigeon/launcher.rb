@@ -1,3 +1,5 @@
+require 'optparse'
+
 class Pigeon::Launcher
   # == Class Methods ========================================================
   
@@ -8,10 +10,17 @@ class Pigeon::Launcher
     
   def initialize(with_engine = Pigeon::Engine)
     @engine = with_engine
+    @options = { }
   end
   
   def handle_args(*args)
-    command = args.flatten.first
+    op = OptionParser.new
+    
+    op.on("-s", "--supervise") do
+      @options[:supervise] = true
+    end
+    
+    command = op.parse(*args.flatten).first
 
     begin
       case (command)
