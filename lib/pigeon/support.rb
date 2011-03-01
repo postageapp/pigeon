@@ -35,13 +35,15 @@ module Pigeon::Support
   # Returns a unique 160-bit identifier for this engine expressed as a 40
   # character hexadecimal string. The first 32-bit sequence is a timestamp
   # so these numbers increase over time and can be used to identify when
-  # a particular instance was launched.
+  # a particular instance was launched. For informational purposes, the name
+  # of the host is appended to help identify the origin of the ident.
   def unique_id
-    '%8x%s' % [
+    '%8x%s@%s' % [
       Time.now.to_i,
       Digest::SHA1.hexdigest(
         '%.8f%8x' % [ Time.now.to_f, rand(1 << 32) ]
-      )[0, 32]
+      )[0, 32],
+      Socket.gethostname
     ]
   end
 
