@@ -224,6 +224,12 @@ class Pigeon::Engine
   def self.unregister_engine(engine)
     @engines.delete(engine)
   end
+  
+  # Schedules a block for execution on the main EventMachine thread. This is
+  # a wrapper around the EventMachine.schedule method.
+  def self.execute_in_main_thread(&block)
+    EventMachine.schedule(&block)
+  end
 
   # == Instance Methods =====================================================
 
@@ -319,7 +325,7 @@ class Pigeon::Engine
   
   # Schedules a block for execution on the main EventMachine thread. This is
   # a wrapper around the EventMachine.schedule method.
-  def schedule(&block)
+  def execute_in_main_thread(&block)
     EventMachine.schedule(&block)
   end
   

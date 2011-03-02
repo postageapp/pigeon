@@ -70,9 +70,22 @@ class Pigeon::Processor
   end
   
 protected
+  # This method is called before a task is started. The default handler does
+  # nothing but this can be customized in a subclass.
+  def before_task(task)
+  end
+
+  # This method is called each time a task is completed or fails. The default
+  # handler does nothing but this can be customized in a subclass.
+  def after_task(task)
+  end
+
+  # Used to reliably switch to the next task and coordinates the required
+  # hand-off from one to the next.
   def switch_to_next_task!
     @lock.synchronize do
       if (@task)
+        after_task(@task)
         @task.processor = nil
       end
       
@@ -80,6 +93,7 @@ protected
       
       if (@queue)
         if (@task = @queue.pop(&@filter))
+          before_task(@task)
           @task.run!(self) do
             switch_to_next_task!
           end
