@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{pigeon}
-  s.version = "0.5.1"
+  s.version = "0.5.2"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["tadman"]
-  s.date = %q{2011-03-01}
+  s.date = %q{2011-04-07}
   s.default_executable = %q{launcher.example}
   s.description = %q{Pigeon is a simple way to get started building an EventMachine engine that's intended to run as a background job.}
   s.email = %q{github@tadman.ca}
@@ -54,7 +54,7 @@ Gem::Specification.new do |s|
   ]
   s.homepage = %q{http://github.com/twg/pigeon}
   s.require_paths = ["lib"]
-  s.rubygems_version = %q{1.5.2}
+  s.rubygems_version = %q{1.6.0}
   s.summary = %q{Simple daemonized EventMachine engine framework with plug-in support}
   s.test_files = [
     "test/helper.rb",
