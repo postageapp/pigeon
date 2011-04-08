@@ -83,9 +83,9 @@ class Pigeon::Queue
     raise BlockRequired unless (block_given?)
     
     @observer_lock.synchronize do
-      @observers[filter_name] ||= [ ]
+      set = @observers[filter_name] ||= [ ]
 
-      @observers[filter_name] << block
+      set << block
     end
 
     task = assign_next_task(filter_name)
