@@ -42,6 +42,8 @@ class Pigeon::Processor
         @lock.synchronize do
           if (!@task and @filter.call(task))
             @task = queue.claim(task)
+
+            before_task(@task)
       
             @task.run!(self) do
               switch_to_next_task!
@@ -94,6 +96,7 @@ protected
       if (@queue)
         if (@task = @queue.pop(&@filter))
           before_task(@task)
+          
           @task.run!(self) do
             switch_to_next_task!
           end
