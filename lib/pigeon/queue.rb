@@ -1,3 +1,5 @@
+require 'monitor'
+
 class Pigeon::Queue
   # == Constants ============================================================
   
@@ -44,15 +46,13 @@ class Pigeon::Queue
   # and order them, so it should take two arguments and return the relative
   # difference (-1, 0, 1) like Array#sort would work.
   def initialize(&block)
-    @filter_lock = Mutex.new
-    @observer_lock = Mutex.new
-
-    @claimable_task = { }
     @filters = self.class.filters.dup
+    @filters.extend(MonitorMixin)
     @observers = { }
+    @observers.extend(MonitorMixin)
+    @claimable_task = { }
     @processors = [ ]
     @next_task = { }
-    @insert_backlog = [ ]
     
     if (block_given?)
       @sort_by = block
@@ -69,7 +69,7 @@ class Pigeon::Queue
     raise BlockRequired unless (block_given?)
 
     @sort_by = block
-    @filter_lock.synchronize do
+    @filters.synchronize do
       @tasks = Pigeon::SortedArray.new(&@sort_by) + @tasks
       
       @next_task = { }
@@ -82,7 +82,7 @@ class Pigeon::Queue
   def observe(filter_name = nil, &block)
     raise BlockRequired unless (block_given?)
     
-    @observer_lock.synchronize do
+    @observers.synchronize do
       set = @observers[filter_name] ||= [ ]
 
       set << block
@@ -95,7 +95,7 @@ class Pigeon::Queue
   # Proc must be passed in, as a block with an identical function will not
   # be considered equivalent.
   def remove_observer(filter_name = nil, &block)
-    @observer_lock.synchronize do
+    @observers.synchronize do
       set = @observers[filter_name]
 
       set and set.delete(block)
@@ -104,7 +104,7 @@ class Pigeon::Queue
   
   # Adds a processor to the queue and adds an observer claim method.
   def add_processor(processor, &claim)
-    @observer_lock.synchronize do
+    @observers.synchronize do
       @processors << processor
     end
 
@@ -113,7 +113,7 @@ class Pigeon::Queue
   
   # Removes a processor from the queue and removes an observer claim method.
   def remove_processor(processor, &claim)
-    @observer_lock.synchronize do
+    @observers.synchronize do
       @processors.delete(processor)
     end
 
@@ -125,7 +125,7 @@ class Pigeon::Queue
   def filter(filter_name, &block)
     raise BlockRequired unless (block_given?)
 
-    @filter_lock.synchronize do
+    @filters.synchronize do
       @filters[filter_name] = block
     end
     
@@ -141,69 +141,64 @@ class Pigeon::Queue
     # If there is an insert operation already in progress, put this task in
     # the backlog for subsequent processing.
     
-    if (@observer_lock.locked?)
-      @insert_backlog << task
-      return task
+    Pigeon::Engine.execute_in_main_thread do
+      self.execute_add_task!(task)
     end
     
-    active_task = task
-    
-    while (active_task) do
-      # Set the claimable task flag for this task since it is not yet in the
-      # actual task queue.
-      @claimable_task[active_task] = true
-    
-      unless (@observers.empty?)
-        @observer_lock.synchronize do
-          @observers.each do |filter_name, list|
-            # Check if this task matches the filter restrictions, and if it
-            # does then call the observer chain in order.
-            if (@filters[filter_name].call(active_task))
-              @observers[filter_name].each do |proc|
-                case (proc.arity)
-                when 2
-                  proc.call(self, active_task)
-                else
-                  proc.call(active_task)
-                end
-
-                # An observer callback has the opportunity to claim a task,
-                # and if it does, the claimable task flag will be false. Loop
-                # only while the task is claimable.
-                break unless (@claimable_task[active_task])
-              end
-            end
-          end
-        end
-      end
-
-        # If this task wasn't claimed by an observer then insert it in the
-        # main task queue.
-      if (@claimable_task.delete(active_task))
-        @filter_lock.synchronize do
-          @tasks << active_task
-          
-          # Update the next task slots for all of the unassigned filters and
-          # trigger observer callbacks as required.
-          @next_task.each do |filter_name, next_task|
-            next if (next_task)
-            
-            if (@filters[filter_name].call(active_task))
-              @next_task[filter_name] = active_task
-            end
-          end
-        end
-      end
-        
-      active_task = @insert_backlog.shift
-    end
-
     task
+  end
+    
+  def execute_add_task!(task)
+    # Set the claimable task flag for this task since it is not yet in the
+    # actual task queue.
+    @claimable_task[task] = true
+  
+    unless (@observers.empty?)
+      @observers.synchronize do
+        @observers.each do |filter_name, list|
+          # Check if this task matches the filter restrictions, and if it
+          # does then call the observer chain in order.
+          if (@filters[filter_name].call(task))
+            @observers[filter_name].each do |proc|
+              case (proc.arity)
+              when 2
+                proc.call(self, task)
+              else
+                proc.call(task)
+              end
+
+              # An observer callback has the opportunity to claim a task,
+              # and if it does, the claimable task flag will be false. Loop
+              # only while the task is claimable.
+              break unless (@claimable_task[task])
+            end
+          end
+        end
+      end
+    end
+
+    # If this task wasn't claimed by an observer then insert it in the
+    # main task queue.
+    if (@claimable_task.delete(task))
+      @filters.synchronize do
+        @tasks << task
+        
+        # Update the next task slots for all of the unassigned filters and
+        # trigger observer callbacks as required.
+        @next_task.each do |filter_name, next_task|
+          next if (next_task)
+          
+          if (@filters[filter_name].call(task))
+            @next_task[filter_name] = task
+          end
+        end
+      end
+    end
   end
   
   # Iterates over each of the tasks in the queue.
   def each
-    @filter_lock.synchronize do
+    @filters.synchronize do
       tasks = @tasks.dup
     end
     
@@ -217,12 +212,12 @@ class Pigeon::Queue
   # can also be used to further restrict the qualifying tasks.
   def peek(filter_name = nil, &block)
     if (block_given?)
-      @filter_lock.synchronize do
+      @filters.synchronize do
         @tasks.find(&block)
       end
     else
       @next_task[filter_name] ||= begin
-        @filter_lock.synchronize do
+        @filters.synchronize do
           filter_proc = @filters[filter_name]
       
           filter_proc and @tasks.find(&filter_proc)
@@ -239,7 +234,7 @@ class Pigeon::Queue
       block = @filters[filter_name]
     end
     
-    @filter_lock.synchronize do
+    @filters.synchronize do
       tasks = @tasks.select(&block)
       
       @tasks -= tasks
@@ -260,7 +255,7 @@ class Pigeon::Queue
   # be removed from the queue and must be re-inserted if it is to be scheduled
   # again.
   def pop(filter_name = nil, &block)
-    @filter_lock.synchronize do
+    @filters.synchronize do
       task =
         if (block_given?)
           @tasks.find(&block)
@@ -289,7 +284,7 @@ class Pigeon::Queue
   # Claims a task. This is used to indicate that the task will be processed
   # without having to be inserted into the queue.
   def claim(task)
-    @filter_lock.synchronize do
+    @filters.synchronize do
       if (@claimable_task[task])
         @claimable_task[task] = false
       elsif (@tasks.delete(task))
@@ -307,9 +302,9 @@ class Pigeon::Queue
   end
 
   # Returns true if the task is queued, false otherwise.
-  def exist?(task)
-    @filter_lock.synchronize do
-      @tasks.exist?(task)
+  def include?(task)
+    @filters.synchronize do
+      @tasks.include?(task)
     end
   end
   
@@ -318,7 +313,7 @@ class Pigeon::Queue
   # otherwise. An optional block can further restrict qualifying tasks.
   def empty?(filter_name = nil, &block)
     if (block_given?)
-      @filter_lock.synchronize do
+      @filters.synchronize do
         !@tasks.find(&block)
       end
     else
@@ -332,7 +327,7 @@ class Pigeon::Queue
   def length(filter_name = nil, &block)
     filter_proc = @filters[filter_name] 
   
-    @filter_lock.synchronize do
+    @filters.synchronize do
       filter_proc ? @tasks.count(&filter_proc) : nil
     end
   end
@@ -341,7 +336,7 @@ class Pigeon::Queue
   
   # Copies the list of queued tasks to a new Array.
   def to_a
-    @filter_lock.synchronize do
+    @filters.synchronize do
       @tasks.dup
     end
   end
@@ -356,7 +351,7 @@ protected
       return task
     end
     
-    @filter_lock.synchronize do
+    @filters.synchronize do
       @next_task[filter_name] ||= @tasks.find(&filter)
     end
   end
