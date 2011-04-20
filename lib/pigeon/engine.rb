@@ -132,8 +132,12 @@ class Pigeon::Engine
   end
 
   def self.start(options = nil)
-    pid = Pigeon::Support.daemonize do
-      launch(options)
+    logger = self.engine_logger
+    
+    pid = Pigeon::Support.daemonize(logger) do
+      launch({
+        :logger => logger
+      }.merge(options || { }))
     end
 
     pid_file.create!(pid)

@@ -3,7 +3,10 @@ require 'optparse'
 class Pigeon::Launcher
   # == Class Methods ========================================================
   
-  def self.launch(engine, options)
+  def self.launch(engine = Pigeon::Engine, *arguments)
+    arguments = %w[ start ] if (arguments.empty?)
+    
+    new(engine).handle_args(*arguments)
   end
     
   # == Instance Methods =====================================================

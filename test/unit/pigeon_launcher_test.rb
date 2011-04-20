@@ -4,10 +4,10 @@ class PigeonLauncherTest < Test::Unit::TestCase
   def test_default_launcher
     pid = Pigeon::Launcher.launch
     
-    assert pid
+    assert pid, "PID should be returned from launcher call"
     assert Pigeon::Engine.running?
     
-    Pigeon::Launcher.stop
+    Pigeon::Engine.stop
     
     assert !Pigeon::Engine.running?
   end

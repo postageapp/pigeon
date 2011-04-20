@@ -4,22 +4,70 @@ module Pigeon::Support
   # Uses the double-fork method to create a fully detached background
   # process. Returns the process ID of the created process. May throw an
   # exception if these processes could not be created.
-  def daemonize
+  def daemonize(logger = nil)
+    delay = 10
     rfd, wfd = IO.pipe
     
     forked_pid = fork do
-      daemon_pid = fork do
-        yield
+      rfd.close
+
+      supervisor_pid = fork do
+        relaunch = true
+        
+        while (relaunch)
+          daemon_pid = fork do
+            begin
+              yield
+            rescue Object => e
+              if (logger)
+                logger.error("Terminated with Exception: [#{e.class}] #{e}")
+                logger.error(e.backtrace.join("\n"))
+
+                Thread.list.each do |thread|
+                  logger.error("Stack trace of current threads")
+                  logger.error(thread.inspect)
+                  
+                  if (thread.backtrace)
+                    logger.error("\t" + thread.backtrace.join("\n\t"))
+                  end
+                end
+              end
+            end
+          end
+          
+          begin
+            Process.wait(daemon_pid)
+
+            # A non-zero exit status indicates some sort of error, so the
+            # process will be relaunched after a short delay.
+            relaunch = ($? != 0)
+
+          rescue Interrupt
+            relaunch = false
+          end
+          
+          if (relaunch)
+            logger.info("Will relaunch in %d seconds" % delay)
+
+            sleep(delay)
+          else
+            logger.info("Terminated normally")
+          end
+        end
       end
+
+      wfd.puts(supervisor_pid)
       
-      wfd.puts daemon_pid
       wfd.flush
       wfd.close
     end
 
+    wfd.close
+
     Process.wait(forked_pid)
 
     daemon_pid = rfd.readline
+    rfd.close
     
     daemon_pid.to_i
   end
