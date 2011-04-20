@@ -20,7 +20,7 @@ class Pigeon::Processor
   def initialize(queue = nil, context = nil, &filter)
     @id = Pigeon::Support.unique_id
     @lock = Mutex.new
-    @filter = filter || lambda { |task| true }
+    @filter = filter
     @context = context
     
     if (queue)
@@ -40,7 +40,7 @@ class Pigeon::Processor
     if (@queue = queue)
       @claim = lambda do |task|
         @lock.synchronize do
-          if (!@task and @filter.call(task))
+          if (!@task and (!@filter or @filter.call(task)))
             @task = queue.claim(task)
 
             before_task(@task)
@@ -59,7 +59,7 @@ class Pigeon::Processor
   # Returns true if the given task would be accepted by the filter defined
   # for this processor.
   def accept?(task)
-    @filter.call(task)
+    !@filter or @filter.call(task)
   end
   
   # Returns true if a task is currently being processed, false otherwise.

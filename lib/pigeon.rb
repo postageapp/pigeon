@@ -18,3 +18,5 @@ end
 # NOTE: This file needs to be directly loaded due to some kind of peculiar
 # issue where requiring it later causes a run-time Interrupt exception.
 require 'pigeon/logger'
+
+require 'fastthread' rescue nil
