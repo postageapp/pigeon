@@ -11,6 +11,7 @@ begin
     gem.homepage = "http://github.com/twg/pigeon"
     gem.authors = %w[ tadman ]
     gem.add_development_dependency 'eventmachine'
+    gem.executables  = [ ]
   end
   Jeweler::GemcutterTasks.new
 rescue LoadError
