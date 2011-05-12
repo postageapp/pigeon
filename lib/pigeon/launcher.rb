@@ -13,15 +13,12 @@ class Pigeon::Launcher
     
   def initialize(with_engine = Pigeon::Engine)
     @engine = with_engine
-    @options = { }
+    
+    yield(self) if (block_given?)
   end
   
   def handle_args(*args)
     op = OptionParser.new
-    
-    op.on("-s", "--supervise") do
-      @options[:supervise] = true
-    end
     
     command = op.parse(*args.flatten).first
 
