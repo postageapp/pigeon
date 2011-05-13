@@ -38,6 +38,10 @@ module Pigeon::Support
             end
           end
           
+          wfd.puts(daemon_pid)
+          wfd.flush
+          wfd.close
+
           begin
             Process.wait(daemon_pid)
 
@@ -59,9 +63,6 @@ module Pigeon::Support
         end
       end
 
-      wfd.puts(supervisor_pid)
-      
-      wfd.flush
       wfd.close
     end
 
