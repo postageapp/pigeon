@@ -194,7 +194,7 @@ class Pigeon::Engine
   # Returns a default logger for the engine.
   def self.engine_logger
     @engine_logger ||= begin
-      f = File.open(File.expand_path(self.engine_log_name, self.log_dir), 'w+')
+      f = File.open(File.expand_path(self.engine_log_name, self.log_dir), 'a')
       f.sync = true
 
       Pigeon::Logger.new(f)
@@ -204,7 +204,7 @@ class Pigeon::Engine
   # Returns a default logger for queries.
   def self.query_logger
     @query_logger ||= begin
-      f = File.open(File.expand_path(self.query_log_name, self.log_dir), 'w+')
+      f = File.open(File.expand_path(self.query_log_name, self.log_dir), 'a')
       f.sync = true
     
       Pigeon::Logger.new(f)
