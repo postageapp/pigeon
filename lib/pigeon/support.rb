@@ -30,8 +30,11 @@ module Pigeon::Support
                   if (thread.backtrace)
                     logger.error("\t" + thread.backtrace.join("\n\t"))
                   end
+                  
                 end
               end
+
+              exit(-1)
             end
           end
           
