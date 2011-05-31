@@ -64,11 +64,7 @@ module Pigeon::Support
           end
         end
       end
-
-      wfd.close
     end
-
-    wfd.close
 
     Process.wait(forked_pid)
 
