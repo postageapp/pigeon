@@ -37,10 +37,12 @@ module Pigeon::Support
               exit(-1)
             end
           end
-          
-          wfd.puts(daemon_pid)
-          wfd.flush
-          wfd.close
+
+          unless (wfd.closed?)
+            wfd.puts(daemon_pid)
+            wfd.flush
+            wfd.close
+          end
 
           begin
             Process.wait(daemon_pid)
