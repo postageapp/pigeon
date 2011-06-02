@@ -38,12 +38,6 @@ module Pigeon::Support
             end
           end
 
-          unless (wfd.closed?)
-            wfd.puts(daemon_pid)
-            wfd.flush
-            wfd.close
-          end
-
           begin
             Process.wait(daemon_pid)
 
@@ -52,6 +46,8 @@ module Pigeon::Support
             relaunch = ($? != 0)
 
           rescue Interrupt
+            Process.kill('INT', daemon_pid)
+
             relaunch = false
           end
           
@@ -64,6 +60,10 @@ module Pigeon::Support
           end
         end
       end
+
+      wfd.puts(supervisor_pid)
+      wfd.flush
+      wfd.close
     end
 
     Process.wait(forked_pid)
