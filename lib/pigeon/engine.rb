@@ -39,6 +39,9 @@ class Pigeon::Engine
       /var/log
       /tmp
     ].freeze
+  option_accessor :threaded,
+    :boolean => true,
+    :default => false
     
   attr_reader :id
 
@@ -348,9 +351,13 @@ class Pigeon::Engine
   # queue has a large number of threads, while the named queues default
   # to only one so they can be processed sequentially.
   def dispatch(name = :default, &block)
-    target_queue = @dispatcher[name] ||= Pigeon::Dispatcher.new(name == :default ? nil : 1)
-    
-    target_queue.perform(&block)
+    if (self.threaded?)
+      target_queue = @dispatcher[name] ||= Pigeon::Dispatcher.new(name == :default ? nil : 1)
+
+      target_queue.perform(&block)
+    else
+      EventMachine.schedule(&block)
+    end
   end
   
   class << self

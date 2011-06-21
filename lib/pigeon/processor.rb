@@ -39,7 +39,7 @@ class Pigeon::Processor
     
     if (@queue = queue)
       @claim = lambda do |task|
-        @lock.synchronize do
+        if (@lock.try_lock)
           if (!@task and (!@filter or @filter.call(task)))
             @task = queue.claim(task)
 
@@ -49,6 +49,8 @@ class Pigeon::Processor
               switch_to_next_task!
             end
           end
+          
+          @lock.unlock
         end
       end
 
