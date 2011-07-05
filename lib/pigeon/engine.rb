@@ -235,7 +235,7 @@ class Pigeon::Engine
   # Schedules a block for execution on the main EventMachine thread. This is
   # a wrapper around the EventMachine.schedule method.
   def self.execute_in_main_thread(&block)
-    EventMachine.schedule(&block)
+    EventMachine.next_tick(&block)
   end
 
   # == Instance Methods =====================================================
@@ -356,7 +356,7 @@ class Pigeon::Engine
 
       target_queue.perform(&block)
     else
-      EventMachine.schedule(&block)
+      EventMachine.next_tick(&block)
     end
   end
   
