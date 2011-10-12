@@ -19,7 +19,6 @@ class Pigeon::Processor
   # can be given to filter the tasks contained in the associated queue.
   def initialize(queue = nil, context = nil, &filter)
     @id = Pigeon::Support.unique_id
-    @lock = Mutex.new
     @filter = filter
     @context = context
     
@@ -39,18 +38,14 @@ class Pigeon::Processor
     
     if (@queue = queue)
       @claim = lambda do |task|
-        if (@lock.try_lock)
-          if (!@task and (!@filter or @filter.call(task)))
-            @task = queue.claim(task)
+        if (!@task and (!@filter or @filter.call(task)))
+          @task = queue.claim(task)
 
-            before_task(@task)
-      
-            @task.run!(self) do
-              switch_to_next_task!
-            end
+          before_task(@task)
+    
+          @task.run!(self) do
+            switch_to_next_task!
           end
-          
-          @lock.unlock
         end
       end
 
@@ -87,21 +82,20 @@ protected
   # Used to reliably switch to the next task and coordinates the required
   # hand-off from one to the next.
   def switch_to_next_task!
-    @lock.synchronize do
-      if (@task)
-        after_task(@task)
-        @task.processor = nil
-      end
-      
+    if (@task)
+      after_task(@task)
+
+      @task.processor = nil
+
       @task = nil
-      
-      if (@queue)
-        if (@task = @queue.pop(&@filter))
-          before_task(@task)
-          
-          @task.run!(self) do
-            switch_to_next_task!
-          end
+    end
+  
+    if (@queue)
+      if (@task = @queue.pop(&@filter))
+        before_task(@task)
+        
+        @task.run!(self) do
+          switch_to_next_task!
         end
       end
     end
