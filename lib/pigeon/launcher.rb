@@ -33,7 +33,7 @@ class Pigeon::Launcher
       when 'status'
         @engine.status(&method(:status))
       when 'run'
-        @engine.logger = Pigeon::Logger.new(STDOUT)
+        @engine.engine_logger = Pigeon::Logger.new(STDOUT)
 
         @engine.run(&method(:run))
       else
