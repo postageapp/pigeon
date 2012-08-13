@@ -23,6 +23,7 @@ class Pigeon::Engine
     :boolean => true
   option_accessor :debug,
     :boolean => true
+  option_accessor :log_rotation
   option_accessor :engine_log_name,
     :default => 'engine.log'
   option_accessor :engine_logger
@@ -200,7 +201,7 @@ class Pigeon::Engine
       f = File.open(File.expand_path(self.engine_log_name, self.log_dir), 'a')
       f.sync = true
 
-      Pigeon::Logger.new(f)
+      Pigeon::Logger.new(f, self.log_rotation)
     end
   end
 
@@ -210,7 +211,7 @@ class Pigeon::Engine
       f = File.open(File.expand_path(self.query_log_name, self.log_dir), 'a')
       f.sync = true
     
-      Pigeon::Logger.new(f)
+      Pigeon::Logger.new(f, self.log_rotation)
     end
   end
   
