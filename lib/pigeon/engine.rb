@@ -54,6 +54,12 @@ class Pigeon::Engine
     after_start
     before_stop
     after_stop
+    before_resume
+    after_resume
+    before_standby
+    after_standby
+    before_shutdown
+    after_shutdown
   ].collect(&:to_sym).freeze
 
   # == Class Methods ========================================================
@@ -166,6 +172,10 @@ class Pigeon::Engine
       rescue Errno::ESRCH
         # No such process exception
         pid = nil
+      end
+      
+      while (Process.kill(0, pid))
+        sleep(1)
       end
 
       pid_file.remove!
@@ -359,6 +369,21 @@ class Pigeon::Engine
     else
       EventMachine.next_tick(&block)
     end
+  end
+
+  def resume!
+    self.run_chain(:before_resume)
+    self.run_chain(:after_resume)
+  end
+  
+  def standby!
+    self.run_chain(:before_standby)
+    self.run_chain(:after_standby)
+  end
+  
+  def shutdown!
+    self.run_chain(:before_shutdown)
+    self.run_chain(:after_shutdown)
   end
   
   class << self
