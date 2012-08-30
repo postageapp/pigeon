@@ -11,15 +11,26 @@ class PigeonQueueTest < Test::Unit::TestCase
   end
   
   def test_queue_cycling
-    queue = Pigeon::Queue.new
+    engine do
+      queue = Pigeon::Queue.new
     
-    task = Pigeon::Task.new
+      task = Pigeon::Task.new
     
-    queue << task
+      queue << task
+      
+      assert_eventually(1) do
+        !queue.empty?
+      end
     
-    assert_equal 1, queue.length
-    assert !queue.empty?
+      assert_equal 1, queue.length
+      assert !queue.empty?
     
-    found_task = queue.pop
+      found_task = queue.pop
+    
+      assert_equal task, found_task
+    
+      assert_equal 0, queue.length
+      assert queue.empty?
+    end
   end
 end

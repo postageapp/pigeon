@@ -1,5 +1,6 @@
 require 'eventmachine'
 require 'socket'
+require 'fiber'
 
 class Pigeon::Engine
   # == Submodules ===========================================================
@@ -45,6 +46,7 @@ class Pigeon::Engine
     :default => false
     
   attr_reader :id
+  attr_reader :state
 
   # == Constants ============================================================
   
@@ -174,8 +176,12 @@ class Pigeon::Engine
         pid = nil
       end
       
-      while (Process.kill(0, pid))
-        sleep(1)
+      begin
+        while (Process.kill(0, pid))
+          sleep(1)
+        end
+      rescue Errno::ESRCH
+        # No such process, already terminated
       end
 
       pid_file.remove!
@@ -254,20 +260,22 @@ class Pigeon::Engine
   def initialize(options = nil)
     @id = Pigeon::Support.unique_id
 
-    @options = options || { }
+    wrap_chain(:initialize) do
+      @options = options || { }
     
-    @task_lock = Mutex.new
-    @task_locks = { }
+      @task_lock = Mutex.new
+      @task_locks = { }
 
-    @task_register_lock = Mutex.new
-    @registered_tasks = { }
+      @task_register_lock = Mutex.new
+      @registered_tasks = { }
     
-    self.logger ||= self.engine_logger
-    self.logger.level = Pigeon::Logger::DEBUG if (self.debug?)
+      self.logger ||= self.engine_logger
+      self.logger.level = Pigeon::Logger::DEBUG if (self.debug?)
     
-    @dispatcher = { }
+      @dispatcher = { }
     
-    run_chain(:after_initialize)
+      @state = :initialized
+    end
   end
 
   # Returns the hostname of the system this engine is running on.
@@ -280,15 +288,15 @@ class Pigeon::Engine
   def run
     assign_process_name!
 
-    run_chain(:before_start)
+    wrap_chain(:start) do
+      STDOUT.sync = true
 
-    STDOUT.sync = true
+      logger.info("Engine \##{id} Running")
+    
+      switch_to_effective_user! if (self.class.user)
 
-    logger.info("Engine \##{id} Running")
-    
-    run_chain(:after_start)
-    
-    switch_to_effective_user! if (self.class.user)
+      @state = :running
+    end
   end
 
   # Used to periodically execute a task or block. When giving a task name,
@@ -350,11 +358,10 @@ class Pigeon::Engine
   # Shuts down the engine. Will also trigger the before_stop and after_stop
   # events.
   def terminate
-    run_chain(:before_stop)
-
-    EventMachine.stop_event_loop
-
-    run_chain(:after_stop)
+    wrap_chain(:stop) do
+      EventMachine.stop_event_loop
+      @state = :terminated
+    end
   end
   
   # Used to dispatch a block for immediate processing on a background thread.
@@ -372,18 +379,40 @@ class Pigeon::Engine
   end
 
   def resume!
-    self.run_chain(:before_resume)
-    self.run_chain(:after_resume)
+    case (@state)
+    when :running
+      # Ignored since already running.
+    when :terminated
+      # Invalid operation, should produce error.
+    else
+      wrap_chain(:resume) do
+        @state = :running
+      end
+    end
   end
   
   def standby!
-    self.run_chain(:before_standby)
-    self.run_chain(:after_standby)
+    case (@state)
+    when :standby
+      # Already in standby state, ignored.
+    when :terminated
+      # Invalid operation, should produce error.
+    else
+      wrap_chain(:standby) do
+        @state = :standby
+      end
+    end
   end
   
   def shutdown!
-    self.run_chain(:before_shutdown)
-    self.run_chain(:after_shutdown)
+    case (@state)
+    when :terminated
+      # Already terminated, ignored.
+    else
+      wrap_chain(:shutdown) do
+        self.terminate
+      end
+    end
   end
   
   class << self
@@ -403,14 +432,8 @@ class Pigeon::Engine
       end
     end
 
-    def run_chain(chain_name, instance)
-      chain = instance_variable_get(:"@_#{chain_name}_chain")
-
-      return unless (chain)
-
-      chain.each do |proc|
-        instance.instance_eval(&proc)
-      end
+    def chain_procs(chain_name)
+      instance_variable_get(:"@_#{chain_name}_chain")
     end
   end
 
@@ -447,8 +470,42 @@ class Pigeon::Engine
   end
 
 protected
+  def wrap_chain(chain_name)
+    Fiber.new do
+      run_chain(:"before_#{chain_name}")
+      yield if (block_given?)
+      run_chain(:"after_#{chain_name}")
+    end.resume
+  end
+  
   def run_chain(chain_name)
-    self.class.run_chain(chain_name, self)
+    callbacks = { }
+    fiber = Fiber.current
+    
+    if (procs = self.class.chain_procs(chain_name))
+      procs.each do |proc|
+        case (proc.arity)
+        when 1
+          callback = lambda {
+            callbacks.delete(callback)
+            
+            if (callbacks.empty?)
+              fiber.resume
+            end
+          }
+          
+          callbacks[callback] = true
+
+          instance_exec(callback, &proc)
+        else
+          instance_eval(&proc)
+        end
+      end
+      
+      if (callbacks.any?)
+        Fiber.yield
+      end
+    end
   end
   
   def switch_to_effective_user!

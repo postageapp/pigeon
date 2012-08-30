@@ -55,6 +55,14 @@ class CallbackTestEngine < Pigeon::Engine
   end
 end
 
+class ShutdownCallbackTestEngine < Pigeon::Engine
+  attr_accessor :callback
+  
+  before_shutdown do |callback|
+    @callback = callback
+  end
+end
+
 class TestPigeonEngine < Test::Unit::TestCase
   def test_default_options
     assert TestEngine.engine_logger
@@ -172,5 +180,37 @@ class TestPigeonEngine < Test::Unit::TestCase
     end
     
     assert_equal nil, running_pid
+  end
+  
+  def test_shutdown_engine_with_blocking_callback
+    e = nil
+    
+    Thread.new do
+      Thread.abort_on_exception = true
+      
+      ShutdownCallbackTestEngine.launch do |_e|
+        e = _e
+      end
+    end
+      
+    assert_eventually(5) do
+      e
+    end
+    
+    assert e, "Engine variable was not bound"
+    assert_equal nil, e.callback
+    
+    assert_eventually(5) do
+      e.state == :running
+    end
+
+    e.shutdown!
+    
+    assert e.callback
+    assert_equal :running, e.state
+    
+    e.callback.call
+
+    assert_equal :terminated, e.state
   end
 end

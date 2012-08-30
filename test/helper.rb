@@ -8,10 +8,10 @@ require 'timeout'
 
 require 'rubygems'
 
-if (Gem.available?('eventmachine'))
+begin
   gem 'eventmachine'
-else
-  raise "EventMachine gem is not installed."
+rescue => e
+  raise "EventMachine gem is not installed or could not be loaded: [#{e.class}] #{e}"
 end
 
 require 'pigeon'

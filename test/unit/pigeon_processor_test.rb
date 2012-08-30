@@ -37,29 +37,42 @@ class PigeonProcessorTest < Test::Unit::TestCase
   end
   
   def test_simple_filter
-    queue = Pigeon::Queue.new
+    engine do
+      queue = Pigeon::Queue.new
     
-    processor = Pigeon::Processor.new(queue) do |task|
-      (task.tag % 2) == 1
-    end
+      processor = Pigeon::Processor.new(queue) do |task|
+        (task.tag % 2) == 1
+      end
     
-    assert_equal false, processor.task?
+      assert_equal false, processor.task?
     
-    queue << TaggedTask.new(0)
+      queue << TaggedTask.new(0)
     
-    assert_equal false, processor.task?
-    assert_equal 1, queue.length
+      assert_eventually(1) do
+        queue.length == 1
+      end
+    
+      assert_equal false, processor.task?
+      assert_equal 1, queue.length
 
-    queue << TaggedTask.new(1)
+      queue << TaggedTask.new(1)
     
-    assert_equal true, processor.task?
-    assert_equal 1, queue.length
+      assert_eventually(1) do
+        queue.length == 1
+      end
+      
+      assert_eventually do
+        processor.task?
+      end
+
+      assert_equal 1, queue.length
     
-    assert_eventually(5) do
-      !processor.task?
+      assert_eventually(5) do
+        !processor.task?
+      end
+    
+      assert_equal 1, queue.length
     end
-    
-    assert_equal 1, queue.length
   end
 
   def test_on_backlog
@@ -135,6 +148,10 @@ class PigeonProcessorTest < Test::Unit::TestCase
     
       count.times do |n|
         queue << TaggedTask.new(n)
+      end
+    
+      assert_eventually(2) do
+        queue.length == count
       end
     
       assert_equal count, queue.length
