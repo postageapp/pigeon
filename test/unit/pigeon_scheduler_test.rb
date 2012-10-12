@@ -53,20 +53,19 @@ class PigeonSchedulerTest < Test::Unit::TestCase
 
   def test_add
     queue = Pigeon::Queue.new
-    
     scheduler = Pigeon::Scheduler.new(queue)
+    
+    assert scheduler.processors.length > 0
 
     count = 1000
-    
     backlog = [ ]
+
     count.times do |n|
       scheduler.add(TaggedTask.new(n * 2 + 1))
       backlog << TaggedTask.new(n * 2)
     end
     
     scheduler.add(backlog)
-    
-    assert !queue.empty?
     
     assert_eventually(5) do
       queue.empty?

@@ -44,35 +44,27 @@ class FailingTask < Pigeon::Task
 end
 
 class PigeonTaskTest < Test::Unit::TestCase
-  def setup
-    @engine = Pigeon::Engine.new
-
-    Pigeon::Engine.register_engine(@engine)
-  end
-  
-  def teardown
-    Pigeon::Engine.unregister_engine(@engine)
-  end
-  
   def test_empty_task
-    task = Pigeon::Task.new
+    engine do
+      task = Pigeon::Task.new
     
-    reported = 0
+      reported = 0
     
-    task.run! do
-      reported = 1
-    end
+      task.run! do
+        reported = 1
+      end
 
-    assert_eventually(5) do
-      task.finished? and reported > 0
-    end
+      assert_eventually(5) do
+        task.finished? and reported > 0
+      end
     
-    assert_equal 1, reported
-    assert_equal :finished, task.state
+      assert_equal 1, reported
+      assert_equal :finished, task.state
 
-    assert_equal nil, task.exception
+      assert_equal nil, task.exception
     
-    assert_equal @engine.object_id, task.engine.object_id
+      assert_equal @engine.object_id, task.engine.object_id
+    end
   end
 
   def test_alternate_engine
@@ -83,61 +75,65 @@ class PigeonTaskTest < Test::Unit::TestCase
   end
   
   def test_example_task
-    task = ExampleTask.new
+    engine do
+      task = ExampleTask.new
     
-    callbacks = [ ]
+      callbacks = [ ]
     
-    task.run! do |state|
-      callbacks << state
+      task.run! do |state|
+        callbacks << state
+      end
+    
+      assert_eventually(5) do
+        task.finished?
+      end
+    
+      assert_equal nil, task.exception
+    
+      assert_equal :finished, task.state
+
+      expected_triggers = [
+        :after_initialized,
+        :initialized,
+        :state1,
+        :state2,
+        :state3,
+        :state4,
+        :finished,
+        :after_finished
+      ]
+    
+      assert_equal expected_triggers, task.triggers
+
+      expected_callbacks = [
+        :initialized,
+        :state1,
+        :state2,
+        :state3,
+        :state4,
+        :finished
+      ]
+
+      assert_equal expected_callbacks, callbacks
     end
-    
-    assert_eventually(5) do
-      task.finished?
-    end
-    
-    assert_equal nil, task.exception
-    
-    assert_equal :finished, task.state
-
-    expected_triggers = [
-      :after_initialized,
-      :initialized,
-      :state1,
-      :state2,
-      :state3,
-      :state4,
-      :finished,
-      :after_finished
-    ]
-    
-    assert_equal expected_triggers, task.triggers
-
-    expected_callbacks = [
-      :initialized,
-      :state1,
-      :state2,
-      :state3,
-      :state4,
-      :finished
-    ]
-
-    assert_equal expected_callbacks, callbacks
   end
 
   def test_failing_task
-    task = FailingTask.new
-    
-    reported = false
-    
-    task.run! do
-      reported = true
-    end
-    
-    assert_eventually(5) do
-      task.failed? and reported
-    end
+    engine do
+      task = FailingTask.new
+  
+      reported = false
+  
+      task.run! do
+        reported = true
+      end
+  
+      assert_eventually(5) do
+        task.failed? and reported
+      end
 
-    assert task.exception?
+      assert task.exception?
+    end
   end
   
   def test_with_context
@@ -156,19 +152,21 @@ class PigeonTaskTest < Test::Unit::TestCase
   end
 
   def test_block_notification
-    task = Pigeon::Task.new
+    engine do
+      task = Pigeon::Task.new
 
-    states_triggered = [ ]
+      states_triggered = [ ]
 
-    task.run! do |state|
-      states_triggered << state
-    end
+      task.run! do |state|
+        states_triggered << state
+      end
     
-    assert_eventually(5) do
-      task.finished?
-    end
+      assert_eventually(5) do
+        task.finished?
+      end
     
-    assert_equal [ :initialized, :finished ], states_triggered
+      assert_equal [ :initialized, :finished ], states_triggered
+    end
   end
 
   def test_priority_order

@@ -46,43 +46,47 @@ class Pigeon::Launcher
   end
   
   def run(pid)
-    puts "#{@engine.name} now running. [%d]" % pid
-    puts "Use ^C to terminate."
+    log "#{@engine.name} now running. [%d]" % pid
+    log "Use ^C to terminate."
   end
   
   def start(pid)
-    puts "#{@engine.name} now running. [%d]" % pid
+    log "#{@engine.name} now running. [%d]" % pid
   end
   
   def stop(pid)
     if (pid)
-      puts "#{@engine.name} shut down. [%d]" % pid
+      log "#{@engine.name} shut down. [%d]" % pid
     else
-      puts "#{@engine.name} was not running."
+      log "#{@engine.name} was not running."
     end
   end
   
   def status(pid)
     if (pid)
-      puts "#{@engine.name} running. [%d]" % pid
+      log "#{@engine.name} running. [%d]" % pid
     else
-      puts "#{@engine.name} is not running."
+      log "#{@engine.name} is not running."
     end
   end
   
   def restart(pid, old_pid)
     if (old_pid)
-      puts "#{@engine.name} terminated. [%d]" % old_pid
+      log "#{@engine.name} terminated. [%d]" % old_pid
     end
 
-    puts "#{@engine.name} now running. [%d]" % pid
+    log "#{@engine.name} now running. [%d]" % pid
   end
   
   def shutdown(pid)
-    puts "Shutting down."
+    log "Shutting down."
   end
 
   def usage
-    puts "Usage: #{File.basename($0)} [start|stop|restart|status|run]"
+    log "Usage: #{File.basename($0)} [start|stop|restart|status|run]"
+  end
+  
+  def log(message)
+    puts message
   end
 end

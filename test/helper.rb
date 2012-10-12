@@ -37,36 +37,29 @@ class Test::Unit::TestCase
 
   def engine
     exception = nil
+    
+    Pigeon::Engine.launch do |new_engine|
+      @engine = new_engine
 
-    @engine_thread = Thread.new do
-      Thread.abort_on_exception = true
-
-      # Create a thread for the engine to run on
-      begin
-        Pigeon::Engine.launch do |new_engine|
-          @engine = new_engine
-          
-          Thread.new do
-            # Execute the test code in a separate thread to avoid blocking
-            # the EventMachine loop.
-            begin
-              yield
-            rescue Object => exception
-            ensure
-              begin
-                @engine.terminate
-              rescue Object
-                # Shutting down may trigger an exception from time to time
-                # if the engine itself has failed.
-              end
-            end
+      # Execute the test code in a separate thread to avoid blocking
+      # the EventMachine loop.
+      Thread.new do
+        begin
+          Thread.abort_on_exception = true
+          yield
+        rescue Object => exception
+        ensure
+          begin
+            # Regardless what happened, always terminate the engine.
+            @engine.terminate
+          rescue Object => e
+            # Shutting down may trigger an exception from time to time
+            # if the engine itself has failed.
+            STDERR.puts("Exception: [#{e.class}] #{e}")
           end
         end
-      rescue Object => exception
       end
     end
-    
-    @engine_thread.join
     
     if (exception)
       raise exception

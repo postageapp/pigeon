@@ -1,5 +1,11 @@
 require File.expand_path(File.join(*%w[ .. helper ]), File.dirname(__FILE__))
 
+class Pigeon::Launcher
+  def log(*args)
+    # Disabled for testing.
+  end
+end
+
 class PigeonLauncherTest < Test::Unit::TestCase
   def test_default_launcher
     pid = Pigeon::Launcher.launch

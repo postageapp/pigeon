@@ -3,6 +3,7 @@ require File.expand_path(File.join(*%w[ .. helper ]), File.dirname(__FILE__))
 class PigeonProcessorTest < Test::Unit::TestCase
   class TaggedTask < Pigeon::Task
     attr_accessor :tag
+    attr_reader :last_task
     
     def initialize(tag, options = nil)
       super(options)
@@ -60,18 +61,12 @@ class PigeonProcessorTest < Test::Unit::TestCase
       assert_eventually(1) do
         queue.length == 1
       end
-      
-      assert_eventually do
-        processor.task?
-      end
 
       assert_equal 1, queue.length
     
       assert_eventually(5) do
         !processor.task?
       end
-    
-      assert_equal 1, queue.length
     end
   end
 
