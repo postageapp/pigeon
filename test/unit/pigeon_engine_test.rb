@@ -56,10 +56,18 @@ class CallbackTestEngine < Pigeon::Engine
 end
 
 class ShutdownCallbackTestEngine < Pigeon::Engine
-  attr_accessor :callback
+  attr_accessor :callbacks
+  
+  after_start do
+    @callbacks = [ ]
+  end
   
   before_shutdown do |callback|
-    @callback = callback
+    @callbacks << callback
+  end
+
+  before_shutdown do |callback|
+    @callbacks << callback
   end
 end
 
@@ -198,7 +206,7 @@ class TestPigeonEngine < Test::Unit::TestCase
     end
     
     assert e, "Engine variable was not bound"
-    assert_equal nil, e.callback
+    assert_equal [ ], e.callbacks
     
     assert_eventually(5) do
       e.state == :running
@@ -206,10 +214,17 @@ class TestPigeonEngine < Test::Unit::TestCase
 
     e.shutdown!
     
-    assert e.callback
+    assert e.callbacks
+    assert !e.callbacks.empty?
     assert_equal :running, e.state
     
-    e.callback.call
+    assert_equal 2, e.callbacks.length
+    
+    e.callbacks[0].call
+
+    assert_equal :running, e.state
+
+    e.callbacks[1].call
 
     assert_equal :terminated, e.state
   end
