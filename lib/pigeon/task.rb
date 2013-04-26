@@ -88,7 +88,7 @@ class Pigeon::Task
   end
   
   def <=>(task)
-    self.priority <=> task.priority
+    self.priority.to_i <=> task.priority.to_i
   end
   
 protected
