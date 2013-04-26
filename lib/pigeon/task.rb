@@ -80,7 +80,7 @@ class Pigeon::Task
   # Returns a numerical priority order. If redefined in a subclass,
   # should return a comparable value.
   def priority
-    @created_at
+    @created_at.to_f
   end
   
   def inspect
@@ -88,7 +88,7 @@ class Pigeon::Task
   end
   
   def <=>(task)
-    self.priority.to_i <=> task.priority.to_i
+    self.priority <=> task.priority
   end
   
 protected
