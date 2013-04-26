@@ -1,4 +1,4 @@
-= pigeon
+# Pigeon
 
 This is a simple framework for building EventMachine engines that are
 constantly running. These are commonly used for background processing jobs,
@@ -55,12 +55,12 @@ An example would look like:
     # the parameter Pigeon::Engine with your specific subclass.
     Pigeon::Launcher.new(Pigeon::Engine).handle_args(ARGV)
     
-== Components
+## Components
 
 There are several key components used by Pigeon to create an event-driven
 engine.
 
-=== Pigeon::Dispatcher
+### Pigeon::Dispatcher
 
 The dispatcher functions as a thread pool for processing small, discrete
 operations. These threads are created on demand and destroyed when no longer
@@ -68,15 +68,15 @@ in use. By limiting the number of threads a pool can contain it is possible
 to schedule sequential operations, manage control over a single shared
 resource, or to run through large lists of operations in parallel.
 
-=== Pigeon::SortedArray
+### Pigeon::SortedArray
 
 This utility class provides a simple self-sorting array. This is used as a
 priority queue within the Pigeon::Queue.
 
-== Status
+## Status
 
 This engine is currently in development.
 
-== Copyright
+## Copyright
 
-Copyright (c) 2010 Scott Tadman, The Working Group
+Copyright (c) 2009-2013 Scott Tadman, The Working Group
