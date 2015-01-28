@@ -1,4 +1,9 @@
 class Pigeon::Task
+  # == Exceptions ===========================================================
+
+  class EngineRequired < StandardError
+  end
+
   # == Constants ============================================================
   
   # == Properties ===========================================================
@@ -35,6 +40,10 @@ class Pigeon::Task
     @context = context
     @engine = engine || Pigeon::Engine.default_engine
     @created_at = Time.now
+
+    unless (@engine)
+      raise EngineRequired, "Task creation requires an active Pigeon::Engine"
+    end
     
     after_initialized
   end

@@ -1,5 +1,11 @@
 require File.expand_path(File.join(*%w[ .. helper ]), File.dirname(__FILE__))
 
+class TerminateTask < Pigeon::Task
+  def state_initialized!
+    transition_to_state(:finished)
+  end
+end
+
 class ExampleTask < Pigeon::Task
   attr_accessor :triggers
   
@@ -46,7 +52,7 @@ end
 class PigeonTaskTest < Minitest::Test
   def test_empty_task
     engine do
-      task = Pigeon::Task.new
+      task = TerminateTask.new
     
       reported = 0
     
@@ -68,14 +74,19 @@ class PigeonTaskTest < Minitest::Test
   end
 
   def test_alternate_engine
-    engine = Pigeon::Engine.new
-    task = Pigeon::Task.new(nil, engine)
-    
-    assert_equal engine.object_id, task.engine.object_id
+    engine do |default_engine|
+      engine = Pigeon::Engine.new
+      
+      refute_equal default_engine.object_id, engine.object_id
+
+      task = Pigeon::Task.new(nil, engine)
+
+      assert_equal engine.object_id, task.engine.object_id
+    end
   end
   
   def test_example_task
-    engine do
+    engine do |launched|
       task = ExampleTask.new
     
       callbacks = [ ]
@@ -137,23 +148,25 @@ class PigeonTaskTest < Minitest::Test
   end
   
   def test_with_context
-    options = {
-      example: 'example1',
-      optional: 1
-    }.freeze
-    
-    task = Pigeon::Task.new(options)
-    
-    assert_equal options, task.context
-    
-    task.context = 'test'
-    
-    assert_equal 'test', task.context
+    engine do
+      options = {
+        example: 'example1',
+        optional: 1
+      }.freeze
+      
+      task = Pigeon::Task.new(options)
+      
+      assert_equal options, task.context
+      
+      task.context = 'test'
+      
+      assert_equal 'test', task.context
+    end
   end
 
   def test_block_notification
     engine do
-      task = Pigeon::Task.new
+      task = TerminateTask.new
 
       states_triggered = [ ]
 
@@ -170,15 +183,17 @@ class PigeonTaskTest < Minitest::Test
   end
 
   def test_priority_order
-    tasks = (0..10).collect do
-      task = Pigeon::Task.new
+    engine do
+      tasks = (0..10).collect do
+        task = Pigeon::Task.new
 
-      # Trigger generation of default priority value
-      task.priority
+        # Trigger generation of default priority value
+        task.priority
 
-      task 
+        task 
+      end
+      
+      assert_equal tasks.collect(&:object_id), tasks.sort.collect(&:object_id)
     end
-    
-    assert_equal tasks.collect(&:object_id), tasks.sort.collect(&:object_id)
   end
 end

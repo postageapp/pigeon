@@ -125,13 +125,13 @@ class Pigeon::Engine
     EventMachine.run do
       engine = new(options)
       
-      yield(engine) if (block_given?)
-    
       Signal.trap('INT') do
         engine.terminate
       end
 
       Pigeon::Engine.register_engine(engine)
+
+      yield(engine) if (block_given?)
 
       engine.run
     end
@@ -250,6 +250,10 @@ class Pigeon::Engine
   # Removes the engine from the list of running engines.
   def self.unregister_engine(engine)
     @engines.delete(engine)
+  end
+
+  def self.clear_engines!
+    @engines = [ ]
   end
   
   # Schedules a block for execution on the main EventMachine thread. This is

@@ -38,9 +38,13 @@ class Minitest::Test
       Thread.new do
         Thread.abort_on_exception = true
 
+        Pigeon::Engine.clear_engines!
+
         # Create a thread for the engine to run on
         begin
-          EventMachine.run
+          Pigeon::Engine.launch do |launched|
+            @engine = launched
+          end
 
         rescue Object => exception
         end
@@ -51,11 +55,11 @@ class Minitest::Test
         # Execute the test code in a separate thread to avoid blocking
         # the EventMachine loop.
         begin
-          while (!EventMachine.reactor_running?)
+          while (!Pigeon::Engine.default_engine and !@engine)
             # Wait impatiently.
           end
 
-          yield
+          yield(@engine)
         rescue Object => exception
         ensure
           begin
