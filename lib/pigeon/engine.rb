@@ -171,6 +171,7 @@ class Pigeon::Engine
     if (pid)
       begin
         Process.kill('INT', pid)
+        
       rescue Errno::ESRCH
         # No such process exception
         pid = nil

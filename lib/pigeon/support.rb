@@ -7,6 +7,8 @@ module Pigeon::Support
   def daemonize(logger = nil)
     delay = 10
     rfd, wfd = IO.pipe
+
+    logger = Pigeon::Logger.new(STDERR)
     
     forked_pid = fork do
       rfd.close
@@ -30,7 +32,6 @@ module Pigeon::Support
                   if (thread.backtrace)
                     logger.error("\t" + thread.backtrace.join("\n\t"))
                   end
-                  
                 end
               end
 
@@ -39,22 +40,31 @@ module Pigeon::Support
           end
 
           begin
-            Process.wait(daemon_pid)
+            pid, status = Process.wait2(daemon_pid)
+
+            puts "EXIT? #{status.inspect}"
 
             # A non-zero exit status indicates some sort of error, so the
             # process will be relaunched after a short delay.
             relaunch = ($? != 0)
 
           rescue Interrupt
+            logger.info("Supervisor #{Process.pid} received termination signal, shutting down child #{demon_pid}")
             Process.kill('INT', daemon_pid)
 
             relaunch = false
           end
           
           if (relaunch)
-            logger.info("Will relaunch in %d seconds" % delay)
+            begin
+              logger.info("Supervisor #{Process.pid} will relaunch in %d seconds" % delay)
+              sleep(delay)
 
-            sleep(delay)
+            rescue Interrupt
+              logger.info("Supervisor #{Process.pid} abandoing restart because of termination")
+
+              relaunch = false
+            end
           else
             logger.info("Terminated normally")
           end
@@ -66,7 +76,7 @@ module Pigeon::Support
       wfd.close
     end
 
-    Process.wait(forked_pid)
+    pid, status = Process.wait2(forked_pid)
 
     daemon_pid = rfd.readline
     rfd.close

@@ -1,7 +1,35 @@
 require 'rubygems'
 require 'bundler/setup'
 
+require 'minitest'
+
+module Minitest
+  # The default Minitest behavior to intercept at_exit and rewrite the exit
+  # status code based on test results is okay for the parent process, but
+  # causes friction when using fork within tests. Here it's disabled unless
+  # the process terminating is the parent.
+  def self.autorun
+    at_exit {
+      next if $! and not ($!.kind_of? SystemExit and $!.success?)
+
+      exit_code = nil
+
+      at_exit {
+        if (Process.pid == @@installed_at_exit)
+          @@after_run.reverse_each(&:call)
+          exit exit_code || false
+        end
+      }
+
+      exit_code = Minitest.run ARGV
+    } unless @@installed_at_exit
+
+    @@installed_at_exit = Process.pid
+  end
+end
+
 require 'minitest/autorun'
+
 require 'timeout'
 
 $LOAD_PATH.unshift(File.expand_path(File.join(*%w[ .. lib ]), File.dirname(__FILE__)))
@@ -9,6 +37,7 @@ $LOAD_PATH.unshift(File.dirname(__FILE__))
 
 require 'pigeon'
 require 'eventmachine'
+
 
 class Minitest::Test
   def assert_timeout(time, message = nil, &block)

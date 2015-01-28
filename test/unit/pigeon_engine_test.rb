@@ -169,6 +169,15 @@ class TestPigeonEngine < Minitest::Test
     
     assert_equal expected_callbacks, read_fd.read.split(/\n/).collect(&:to_sym)
   end
+
+  def test_fork_exitstatus
+    child_pid = fork do
+    end
+
+    pid, status = Process.wait2(child_pid)
+
+    assert_equal 0, status.exitstatus
+  end
   
   def test_shutdown_engine
     engine_pid = nil
@@ -182,6 +191,9 @@ class TestPigeonEngine < Minitest::Test
     assert_eventually(5) do
       !ShutdownEngine.status
     end
+
+  ensure
+    ShutdownEngine.stop
   end
   
   def test_shutdown_engine_with_blocking_callback
