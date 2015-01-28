@@ -49,7 +49,7 @@ module Pigeon::Support
             relaunch = ($? != 0)
 
           rescue Interrupt
-            logger.info("Supervisor #{Process.pid} received termination signal, shutting down child #{demon_pid}")
+            logger.info("Supervisor #{Process.pid} received termination signal, shutting down child #{daemon_pid}")
             Process.kill('INT', daemon_pid)
 
             relaunch = false
