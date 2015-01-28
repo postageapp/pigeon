@@ -43,7 +43,7 @@ class FailingTask < Pigeon::Task
   end
 end
 
-class PigeonTaskTest < Test::Unit::TestCase
+class PigeonTaskTest < Minitest::Test
   def test_empty_task
     engine do
       task = Pigeon::Task.new
@@ -138,8 +138,8 @@ class PigeonTaskTest < Test::Unit::TestCase
   
   def test_with_context
     options = {
-      :example => 'example1',
-      :optional => 1
+      example: 'example1',
+      optional: 1
     }.freeze
     
     task = Pigeon::Task.new(options)

@@ -1,6 +1,6 @@
 require File.expand_path(File.join(*%w[ .. helper ]), File.dirname(__FILE__))
 
-class PigeonDispatcherTest < Test::Unit::TestCase
+class PigeonDispatcherTest < Minitest::Test
   def test_routine_dispatching
     dispatcher = Pigeon::Dispatcher.new
     

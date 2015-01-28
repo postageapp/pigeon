@@ -6,7 +6,7 @@ class Pigeon::Launcher
   end
 end
 
-class PigeonLauncherTest < Test::Unit::TestCase
+class PigeonLauncherTest < Minitest::Test
   def test_default_launcher
     pid = Pigeon::Launcher.launch
     
@@ -19,41 +19,40 @@ class PigeonLauncherTest < Test::Unit::TestCase
   end
 
   def test_triggers
-    triggered = Hash.new do |h, k|
-      h[k] = 0
-    end
+    launcher = Pigeon::Launcher.new(Pigeon::Engine)
+
+    triggered = Hash.new { |h,k| h[k] = [ ] }
     
-    Pigeon::Launcher.new(Pigeon::Engine).handle_args('start') do
-      start do
-        triggered[:start] += 1
-      end
+    launcher.handle_args('start') do |pid|
+      triggered[:start] << pid
     end
 
-    Pigeon::Launcher.new(Pigeon::Engine).handle_args('restart') do
-      restart do
-        triggered[:restart] += 1
-      end
+    launcher.handle_args('status') do |pid|
+      triggered[:status] << pid
     end
 
-    Pigeon::Launcher.new(Pigeon::Engine).handle_args('status') do
-      status do
-        triggered[:status] += 1
-      end
+    launcher.handle_args('restart') do |pid, old_pid|
+      triggered[:restart] << pid
     end
 
-    Pigeon::Launcher.new(Pigeon::Engine).handle_args('stop') do
-      stop do
-        triggered[:stop] += 1
-      end
+    launcher.handle_args('status') do |pid|
+      triggered[:status] << pid
+    end
+
+    launcher.handle_args('stop') do |pid|
+      triggered[:stop] << pid
     end
     
-    # FIX: Test `run`
-    
-    if (false)
-      assert_equal 1, triggered[:start]
-      assert_equal 1, triggered[:restart]
-      assert_equal 1, triggered[:status]
-      assert_equal 1, triggered[:stop]
-    end
+    assert triggered[:start]
+    assert_equal 1, triggered[:start].length
+
+
+    assert triggered[:restart]
+    assert_equal 1, triggered[:restart].length
+    refute_equal triggered[:start], triggered[:restart]
+
+    assert_equal triggered[:start] + triggered[:restart], triggered[:status]
+
+    assert_equal triggered[:restart], triggered[:stop]
   end
 end

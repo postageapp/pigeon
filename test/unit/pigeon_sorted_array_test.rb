@@ -1,6 +1,6 @@
 require File.expand_path(File.join(*%w[ .. helper ]), File.dirname(__FILE__))
 
-class PigeonSortedArrayTest < Test::Unit::TestCase
+class PigeonSortedArrayTest < Minitest::Test
   def test_empty_state
     array = Pigeon::SortedArray.new
     
@@ -21,13 +21,13 @@ class PigeonSortedArrayTest < Test::Unit::TestCase
   def test_does_sorting
     array = Pigeon::SortedArray.new
     
-    test_array = [2, 2, 2, 2, 3, 3, 3]
+    test_array = [ 2, 2, 2, 2, 3, 3, 3 ]
     
     test_array.each do |i| 
       array << i
     end
     
-    assert_equal [2, 2, 2, 2, 3, 3, 3], array.to_a
+    assert_equal [ 2, 2, 2, 2, 3, 3, 3 ], array.to_a
   end
   
   def test_does_sorting_with_insertion_in_order

@@ -13,6 +13,14 @@ module Pigeon
   autoload(:SortedArray, 'pigeon/sorted_array')
   autoload(:Support, 'pigeon/support')
   autoload(:Task, 'pigeon/task')
+
+  # == Module Methods =======================================================
+
+  def self.version
+    @version ||= File.readlines(
+      File.expand_path('../VERSION'), File.dirname(__FILE__)
+    )[0].chomp
+  end
 end
 
 # NOTE: This file needs to be directly loaded due to some kind of peculiar

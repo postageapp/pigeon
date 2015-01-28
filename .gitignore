@@ -1,5 +1,7 @@
 *.gem
 *.log
+/.ruby-version
+/Gemfile.lock
 
 .DS_Store
 *.tmproj

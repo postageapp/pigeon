@@ -1,35 +1,30 @@
 require 'rubygems'
-require 'test/unit'
+require 'bundler/setup'
 
-$LOAD_PATH.unshift(File.expand_path(*%w[ .. lib ]), File.dirname(__FILE__))
-$LOAD_PATH.unshift(File.dirname(__FILE__))
-
+require 'minitest/autorun'
 require 'timeout'
 
-require 'rubygems'
-
-begin
-  gem 'eventmachine'
-rescue => e
-  raise "EventMachine gem is not installed or could not be loaded: [#{e.class}] #{e}"
-end
+$LOAD_PATH.unshift(File.expand_path(File.join(*%w[ .. lib ]), File.dirname(__FILE__)))
+$LOAD_PATH.unshift(File.dirname(__FILE__))
 
 require 'pigeon'
+require 'eventmachine'
 
-class Test::Unit::TestCase
+class Minitest::Test
   def assert_timeout(time, message = nil, &block)
     Timeout::timeout(time, &block)
+
   rescue Timeout::Error
     flunk(message || 'assert_timeout timed out')
   end
   
   def assert_eventually(time = nil, message = nil, &block)
-    start_time = Time.now.to_i
+    start_time = Time.now.to_f
 
     while (!block.call)
       select(nil, nil, nil, 0.1)
       
-      if (time and (Time.now.to_i - start_time > time))
+      if (time and (Time.now.to_f - start_time > time))
         flunk(message || 'assert_eventually timed out')
       end
     end
@@ -37,28 +32,54 @@ class Test::Unit::TestCase
 
   def engine
     exception = nil
+    test_thread = nil
     
-    Pigeon::Engine.launch do |new_engine|
-      @engine = new_engine
-
-      # Execute the test code in a separate thread to avoid blocking
-      # the EventMachine loop.
+    engine_thread =
       Thread.new do
+        Thread.abort_on_exception = true
+
+        # Create a thread for the engine to run on
         begin
-          Thread.abort_on_exception = true
+          EventMachine.run
+
+        rescue Object => exception
+        end
+      end
+
+    test_thread =
+      Thread.new do
+        # Execute the test code in a separate thread to avoid blocking
+        # the EventMachine loop.
+        begin
+          while (!EventMachine.reactor_running?)
+            # Wait impatiently.
+          end
+
           yield
         rescue Object => exception
         ensure
           begin
-            # Regardless what happened, always terminate the engine.
-            @engine.terminate
-          rescue Object => e
+            if (EventMachine.reactor_running?)
+              EventMachine.stop_event_loop
+            end
+          rescue Object
+            STDERR.puts("[#{exception.class}] #{exception}")
             # Shutting down may trigger an exception from time to time
             # if the engine itself has failed.
-            STDERR.puts("Exception: [#{e.class}] #{e}")
           end
         end
       end
+
+    test_thread.join
+
+    begin
+      Timeout.timeout(1) do
+        engine_thread.join
+      end
+    rescue Timeout::Error
+      engine_thread.kill
+
+      fail 'Execution timed out'
     end
     
     if (exception)

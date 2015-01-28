@@ -6,10 +6,10 @@ class OptionClass
   option_accessor :single_option
   option_accessor :multi1, :multi2
   option_accessor :option_with_default,
-    :default => :example_default
+    default: :example_default
 
   option_accessor :boolean_option,
-    :boolean => true
+    boolean: true
 
   self.single_option = :single_option_default
 end
@@ -17,7 +17,7 @@ end
 class OptionSubclass < OptionClass
 end
 
-class PigeonOptionAccessorTest < Test::Unit::TestCase
+class PigeonOptionAccessorTest < Minitest::Test
   def test_class_and_instance_chaining
     assert_equal :single_option_default, OptionClass.single_option
     

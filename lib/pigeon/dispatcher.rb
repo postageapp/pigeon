@@ -10,7 +10,7 @@ class Pigeon::Dispatcher
   # == Properties ===========================================================
   
   option_accessor :thread_limit,
-    :default => 24
+    default: 24
 
   attr_reader :exceptions
 

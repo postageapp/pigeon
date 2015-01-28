@@ -71,7 +71,7 @@ class ShutdownCallbackTestEngine < Pigeon::Engine
   end
 end
 
-class TestPigeonEngine < Test::Unit::TestCase
+class TestPigeonEngine < Minitest::Test
   def test_default_options
     assert TestEngine.engine_logger
     assert TestEngine.engine_logger.is_a?(Logger)
@@ -82,7 +82,7 @@ class TestPigeonEngine < Test::Unit::TestCase
     
     read_fd, write_fd = IO.pipe
     
-    TestEngine.start(:pipe => write_fd) do |pid|
+    TestEngine.start(pipe: write_fd) do |pid|
       assert pid
       engine_pid = pid
     end
@@ -111,7 +111,7 @@ class TestPigeonEngine < Test::Unit::TestCase
     
     read_fd, write_fd = IO.pipe
     
-    engine_pid = TestEngine.start(:pipe => write_fd)
+    engine_pid = TestEngine.start(pipe: write_fd)
     
     write_fd.close
     
@@ -135,7 +135,7 @@ class TestPigeonEngine < Test::Unit::TestCase
     
     read_fd, write_fd = IO.pipe
     
-    CallbackTestEngine.start(:pipe => write_fd) do |pid|
+    CallbackTestEngine.start(pipe: write_fd) do |pid|
       assert pid
       engine_pid = pid
     end
@@ -179,15 +179,9 @@ class TestPigeonEngine < Test::Unit::TestCase
     
     assert engine_pid
     
-    sleep(1)
-    
-    running_pid = nil
-    
-    ShutdownEngine.status do |pid|
-      running_pid = pid
+    assert_eventually(5) do
+      !ShutdownEngine.status
     end
-    
-    assert_equal nil, running_pid
   end
   
   def test_shutdown_engine_with_blocking_callback

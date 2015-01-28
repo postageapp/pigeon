@@ -21,29 +21,29 @@ class Pigeon::Engine
   option_accessor :name
   option_accessor :pid_file_name
   option_accessor :foreground,
-    :boolean => true
+    boolean: true
   option_accessor :debug,
-    :boolean => true
+    boolean: true
   option_accessor :log_rotation
   option_accessor :engine_log_name,
-    :default => 'engine.log'
+    default: 'engine.log'
   option_accessor :engine_logger
   option_accessor :query_log_name,
-    :default => 'query.log'
+    default: 'query.log'
   option_accessor :query_logger
   option_accessor :try_pid_dirs,
-    :default => %w[
+    default: %w[
       /var/run
       /tmp
     ].freeze
   option_accessor :try_log_dirs,
-    :default => %w[
+    default: %w[
       /var/log
       /tmp
     ].freeze
   option_accessor :threaded,
-    :boolean => true,
-    :default => false
+    boolean: true,
+    default: false
     
   attr_reader :id
   attr_reader :state
@@ -148,7 +148,7 @@ class Pigeon::Engine
     
     pid = Pigeon::Support.daemonize(logger) do
       launch({
-        :logger => logger
+        logger: logger
       }.merge(options || { }))
     end
 
@@ -162,7 +162,7 @@ class Pigeon::Engine
   def self.run
     yield($$) if (block_given?)
 
-    launch(:foreground => true)
+    launch(foreground: true)
   end
   
   def self.stop
@@ -195,8 +195,11 @@ class Pigeon::Engine
   end
 
   def self.restart
-    self.stop
-    self.start
+    self.stop do |old_pid|
+      self.start do |pid|
+        yield(pid, old_pid) if (block_given?)
+      end
+    end
   end
   
   def self.running?

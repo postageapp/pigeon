@@ -1,6 +1,6 @@
 require File.expand_path(File.join(*%w[ .. helper ]), File.dirname(__FILE__))
 
-class PigeonProcessorTest < Test::Unit::TestCase
+class PigeonProcessorTest < Minitest::Test
   class TaggedTask < Pigeon::Task
     attr_accessor :tag
     attr_reader :last_task

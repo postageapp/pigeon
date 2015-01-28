@@ -18,24 +18,53 @@ class Pigeon::Launcher
   end
   
   def handle_args(*args)
-    op = OptionParser.new
+    op = OptionParser.new do |parser|
+      parser.on('-v', '--version') do
+        pigeon_version = 'Pigeon %s' % Pigeon.version
+
+        version =
+          if (@engine.respond_to?(:version))
+            '%s (%s)' % [ @engine.version, pigeon_version ]
+          else
+            pigeon_version
+          end
+
+        puts version
+        exit(0)
+      end
+    end
     
     command = op.parse(*args.flatten).first
 
     begin
       case (command)
       when 'start'
-        @engine.start(&method(:start))
+        @engine.start do |pid|
+          yield(pid) if (block_given?)
+          self.start(pid)
+        end
       when 'stop'
-        @engine.stop(&method(:stop))
+        @engine.stop do |pid|
+          yield(pid) if (block_given?)
+          self.stop(pid)
+        end
       when 'restart'
-        @engine.restart(&method(:restart))
+        @engine.restart do |pid, old_pid|
+          yield(pid, old_pid) if (block_given?)
+          self.restart(pid, old_pid)
+        end
       when 'status'
-        @engine.status(&method(:status))
+        @engine.status do |pid|
+          yield(pid) if (block_given?)
+          self.status(pid)
+        end
       when 'run'
         @engine.engine_logger = Pigeon::Logger.new(STDOUT)
 
-        @engine.run(&method(:run))
+        @engine.run do |pid|
+          yield(pid) if (block_given?)
+          self.run(pid)
+        end
       else
         usage
       end
