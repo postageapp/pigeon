@@ -9,6 +9,10 @@ class PigeonProcessorTest < Minitest::Test
       super(options)
       @tag = tag
     end
+
+    def state_initialized!
+      transition_to_state(:finished)
+    end
     
     def inspect
       "<#{@tag}>"
@@ -46,7 +50,7 @@ class PigeonProcessorTest < Minitest::Test
       end
     
       assert_equal false, processor.task?
-    
+
       queue << TaggedTask.new(0)
     
       assert_eventually(1) do
@@ -71,16 +75,18 @@ class PigeonProcessorTest < Minitest::Test
   end
 
   def test_on_backlog
-    queue = Pigeon::Queue.new
-    
-    100.times do |n|
-      queue << TaggedTask.new(n)
-    end
-    
-    processor = Pigeon::Processor.new(queue)
-    
-    assert_eventually(5) do
-      queue.empty?
+    engine do
+      queue = Pigeon::Queue.new
+      
+      100.times do |n|
+        queue << TaggedTask.new(n)
+      end
+      
+      processor = Pigeon::Processor.new(queue)
+      
+      assert_eventually(5) do
+        queue.empty?
+      end
     end
   end
   
@@ -145,7 +151,7 @@ class PigeonProcessorTest < Minitest::Test
         queue << TaggedTask.new(n)
       end
     
-      assert_eventually(2) do
+      assert_eventually(5) do
         queue.length == count
       end
     

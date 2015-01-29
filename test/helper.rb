@@ -9,35 +9,39 @@ module Minitest
   # causes friction when using fork within tests. Here it's disabled unless
   # the process terminating is the parent.
   def self.autorun
-    at_exit {
+    return if (@at_exit_hook_installed)
+
+    @at_exit_hook_installed = Process.pid
+
+    at_exit do
       next if $! and not ($!.kind_of? SystemExit and $!.success?)
 
-      exit_code = nil
+      exit_code = Minitest.run(ARGV)
 
-      at_exit {
-        if (Process.pid == @@installed_at_exit)
-          @@after_run.reverse_each(&:call)
-          exit exit_code || false
+      @@after_run.reverse_each do |block|
+        block.call
+
+        if (Process.pid != @at_exit_hook_installed)
+          break
         end
-      }
+      end
 
-      exit_code = Minitest.run ARGV
-    } unless @@installed_at_exit
-
-    @@installed_at_exit = Process.pid
+      exit(exit_code)
+    end
   end
 end
 
+require 'minitest/reporters'
 require 'minitest/autorun'
-
 require 'timeout'
+
+Minitest::Reporters.use!(Minitest::Reporters::SpecReporter.new)
 
 $LOAD_PATH.unshift(File.expand_path(File.join(*%w[ .. lib ]), File.dirname(__FILE__)))
 $LOAD_PATH.unshift(File.dirname(__FILE__))
 
 require 'pigeon'
 require 'eventmachine'
-
 
 class Minitest::Test
   def assert_timeout(time, message = nil, &block)
@@ -84,7 +88,7 @@ class Minitest::Test
         # Execute the test code in a separate thread to avoid blocking
         # the EventMachine loop.
         begin
-          while (!Pigeon::Engine.default_engine and !@engine)
+          while (!@engine or Pigeon::Engine.default_engine != @engine)
             # Wait impatiently.
           end
 
@@ -111,12 +115,14 @@ class Minitest::Test
       end
     rescue Timeout::Error
       engine_thread.kill
-
-      fail 'Execution timed out'
     end
     
     if (exception)
       raise exception
+    end
+  ensure
+    if (engine_thread)
+      engine_thread.kill
     end
   end
 end

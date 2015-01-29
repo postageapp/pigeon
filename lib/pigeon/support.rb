@@ -7,8 +7,6 @@ module Pigeon::Support
   def daemonize(logger = nil)
     delay = 10
     rfd, wfd = IO.pipe
-
-    logger = Pigeon::Logger.new(STDERR)
     
     forked_pid = fork do
       rfd.close
@@ -40,19 +38,29 @@ module Pigeon::Support
           end
 
           begin
+            interrupted = false
+
+            Signal.trap('INT') do
+              interrupted = true
+              Process.kill('INT', daemon_pid)
+
+              relaunch = false
+            end
+
             pid, status = Process.wait2(daemon_pid)
 
-            puts "EXIT? #{status.inspect}"
+            if (interrupted)
+              logger.info("Supervisor #{Process.pid} received termination signal, shut down child #{daemon_pid}")
+            end
 
             # A non-zero exit status indicates some sort of error, so the
             # process will be relaunched after a short delay.
             relaunch = ($? != 0)
 
-          rescue Interrupt
-            logger.info("Supervisor #{Process.pid} received termination signal, shutting down child #{daemon_pid}")
-            Process.kill('INT', daemon_pid)
-
-            relaunch = false
+          ensure
+            # Reset Signal handler before forking again
+            Signal.trap('INT') do
+            end
           end
           
           if (relaunch)
@@ -82,6 +90,10 @@ module Pigeon::Support
     rfd.close
     
     daemon_pid.to_i
+  end
+
+  def nap(time)
+    select(nil, nil, nil, time.to_f)
   end
   
   # Finds the first directory in the given list that exists and is

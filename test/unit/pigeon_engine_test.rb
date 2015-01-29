@@ -75,6 +75,8 @@ class TestPigeonEngine < Minitest::Test
   def test_default_options
     assert TestEngine.engine_logger
     assert TestEngine.engine_logger.is_a?(Logger)
+
+    assert_equal nil, TestEngine.default_engine
   end
   
   def test_example_subclass
@@ -88,7 +90,7 @@ class TestPigeonEngine < Minitest::Test
     end
     
     write_fd.close
-    
+
     Timeout::timeout(5) do
       assert_equal "STARTED\n", read_fd.readline
     end
@@ -96,7 +98,7 @@ class TestPigeonEngine < Minitest::Test
     TestEngine.status do |pid|
       assert_equal engine_pid, pid
     end
-    
+
     TestEngine.stop do |pid|
       assert_equal engine_pid, pid
     end
@@ -177,6 +179,14 @@ class TestPigeonEngine < Minitest::Test
     pid, status = Process.wait2(child_pid)
 
     assert_equal 0, status.exitstatus
+
+    child_pid = fork do
+      exit(90)
+    end
+
+    pid, status = Process.wait2(child_pid)
+
+    assert_equal 90, status.exitstatus
   end
   
   def test_shutdown_engine

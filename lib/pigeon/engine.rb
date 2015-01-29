@@ -179,7 +179,7 @@ class Pigeon::Engine
       
       begin
         while (Process.kill(0, pid))
-          sleep(1)
+          Pigeon::Support.nap(0.1)
         end
       rescue Errno::ESRCH
         # No such process, already terminated
@@ -367,7 +367,10 @@ class Pigeon::Engine
   # events.
   def terminate
     wrap_chain(:stop) do
-      EventMachine.stop_event_loop
+      if (EventMachine.reactor_running?)
+        EventMachine.stop_event_loop
+      end
+
       @state = :terminated
     end
   end
