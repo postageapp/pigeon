@@ -11,7 +11,6 @@ begin
     gem.email = "github@tadman.ca"
     gem.homepage = "http://github.com/twg/pigeon"
     gem.authors = %w[ tadman ]
-    gem.add_development_dependency 'eventmachine'
     gem.executables  = [ ]
   end
 
