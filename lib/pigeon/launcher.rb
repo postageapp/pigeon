@@ -68,8 +68,8 @@ class Pigeon::Launcher
       else
         usage
       end
+
     rescue Interrupt
-      shutdown(pid)
       exit(0)
     end
   end
