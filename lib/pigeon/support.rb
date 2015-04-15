@@ -18,6 +18,8 @@ module Pigeon::Support
           daemon_pid = fork do
             begin
               yield
+            rescue SystemExit
+              # Forced exit from supervisor process
             rescue Object => e
               if (logger)
                 logger.error("Terminated with Exception: [#{e.class}] #{e}")
@@ -50,7 +52,7 @@ module Pigeon::Support
             pid, status = Process.wait2(daemon_pid)
 
             if (interrupted)
-              logger.info("Supervisor #{Process.pid} received termination signal, shut down child #{daemon_pid}")
+              logger.info("Supervisor #{Process.pid} received termination signal, shut down child #{daemon_pid}.")
             end
 
             # A non-zero exit status indicates some sort of error, so the
@@ -74,7 +76,7 @@ module Pigeon::Support
               relaunch = false
             end
           else
-            logger.info("Terminated normally")
+            logger.info("Terminated normally.")
           end
         end
       end
