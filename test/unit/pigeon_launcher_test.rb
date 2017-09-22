@@ -1,14 +1,8 @@
-require File.expand_path(File.join(*%w[ .. helper ]), File.dirname(__FILE__))
-
-class Pigeon::Launcher
-  def log(*args)
-    # Disabled for testing.
-  end
-end
+require_relative '../helper'
 
 class PigeonLauncherTest < Minitest::Test
   def test_default_launcher
-    pid = Pigeon::Launcher.launch
+    pid = Pigeon::Launcher.launch(logging: false)
     
     assert pid, "PID should be returned from launcher call"
     assert Pigeon::Engine.running?
@@ -19,7 +13,7 @@ class PigeonLauncherTest < Minitest::Test
   end
 
   def test_triggers
-    launcher = Pigeon::Launcher.new(Pigeon::Engine)
+    launcher = Pigeon::Launcher.new(Pigeon::Engine, logging: false)
 
     triggered = Hash.new { |h,k| h[k] = [ ] }
     

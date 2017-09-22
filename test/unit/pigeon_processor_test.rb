@@ -1,4 +1,4 @@
-require File.expand_path(File.join(*%w[ .. helper ]), File.dirname(__FILE__))
+require_relative '../helper'
 
 class PigeonProcessorTest < Minitest::Test
   class TaggedTask < Pigeon::Task
@@ -87,6 +87,8 @@ class PigeonProcessorTest < Minitest::Test
       assert_eventually(5) do
         queue.empty?
       end
+
+      assert !processor.task?
     end
   end
   
@@ -137,7 +139,7 @@ class PigeonProcessorTest < Minitest::Test
     
       processor.queue = nil
     
-      assert_equal nil, processor.queue
+      assert_nil processor.queue
       assert_equal [ ], queue.processors
     end
   end

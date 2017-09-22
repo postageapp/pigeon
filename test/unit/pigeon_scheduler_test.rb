@@ -1,4 +1,4 @@
-require File.expand_path(File.join(*%w[ .. helper ]), File.dirname(__FILE__))
+require_relative '../helper'
 
 class PigeonSchedulerTest < Minitest::Test
   class TaggedTask < Pigeon::Task

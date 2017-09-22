@@ -1,4 +1,4 @@
-require File.expand_path(File.join(*%w[ .. helper ]), File.dirname(__FILE__))
+require_relative '../helper'
 
 class TerminateTask < Pigeon::Task
   def state_initialized!
@@ -67,7 +67,7 @@ class PigeonTaskTest < Minitest::Test
       assert_equal 1, reported
       assert_equal :finished, task.state
 
-      assert_equal nil, task.exception
+      assert_nil task.exception
     
       assert_equal @engine.object_id, task.engine.object_id
     end
@@ -99,7 +99,7 @@ class PigeonTaskTest < Minitest::Test
         task.finished?
       end
     
-      assert_equal nil, task.exception
+      assert_nil task.exception
     
       assert_equal :finished, task.state
 

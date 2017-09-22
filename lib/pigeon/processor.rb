@@ -21,6 +21,7 @@ class Pigeon::Processor
     @id = Pigeon::Support.unique_id
     @filter = filter
     @context = context
+    @task = nil
     
     if (queue)
       self.queue = queue
@@ -32,7 +33,7 @@ class Pigeon::Processor
   # Assigns this processor to a particular queue. If one is already assigned
   # then the observer callback for that queue will be removed.
   def queue=(queue)
-    if (@queue)
+    if (defined?(@queue))
       @queue.remove_processor(self, &@claim)
     end
     

@@ -1,4 +1,4 @@
-require File.expand_path(File.join(*%w[ .. helper ]), File.dirname(__FILE__))
+require_relative '../helper'
 
 class PigeonQueueTest < Minitest::Test
   class TaggedTask < Pigeon::Task
@@ -20,7 +20,7 @@ class PigeonQueueTest < Minitest::Test
     assert_equal 0, queue.length
     assert_equal true, queue.empty?
     
-    assert_equal nil, queue.pop
+    assert_nil queue.pop
     
     assert_equal [ ], queue.processors
   end
@@ -80,6 +80,8 @@ class PigeonQueueTest < Minitest::Test
       assert_equal 2, queue.length(:over_7)
     
       pulled_task = queue.pop(:over_7)
+
+      assert pulled_task
     
       assert_equal 9, queue.length
 
@@ -88,7 +90,7 @@ class PigeonQueueTest < Minitest::Test
     
       queue.pop(:over_7)
 
-      assert_equal nil, queue.peek(:over_7)
+      assert_nil queue.peek(:over_7)
       assert_equal 0, queue.length(:over_7)
       assert_equal true, queue.empty?(:over_7)
     
@@ -104,7 +106,7 @@ class PigeonQueueTest < Minitest::Test
     
       queue.claim(new_task)
     
-      assert_equal nil, queue.peek(:over_7)
+      assert_nil queue.peek(:over_7)
       assert_equal 0, queue.length(:over_7)
       assert_equal true, queue.empty?(:over_7)
     end
@@ -146,7 +148,7 @@ class PigeonQueueTest < Minitest::Test
         queue.include?(new_task)
       end
     
-      assert_equal nil, added_odd
+      assert_nil added_odd
 
       odd_1 = queue << TaggedTask.new(11)
       
@@ -167,7 +169,7 @@ class PigeonQueueTest < Minitest::Test
       # Observer callbacks are not triggered on existing data, only on new
       # insertions.
       assert_equal false, has_run
-      assert_equal nil, claimed_task
+      assert_nil claimed_task
       assert_equal 7, queue.length
       assert_equal 1, queue.length(:odd)
 
@@ -177,7 +179,7 @@ class PigeonQueueTest < Minitest::Test
         queue.include?(new_task)
       end
     
-      assert_equal nil, claimed_task
+      assert_nil claimed_task
       assert_equal 8, queue.length
       assert_equal 1, queue.length(:odd)
 
@@ -203,7 +205,7 @@ class PigeonQueueTest < Minitest::Test
         queue.include?(new_task)
       end
 
-      assert_equal nil, claimed_task
+      assert_nil claimed_task
       assert_equal false, has_run
 
       odd_2 = queue << TaggedTask.new(15)
@@ -232,7 +234,7 @@ class PigeonQueueTest < Minitest::Test
         end
       end
     
-      new_task = queue << TaggedTask.new(0)
+      queue << TaggedTask.new(0)
       
       assert_eventually(2) do
         queue.peek

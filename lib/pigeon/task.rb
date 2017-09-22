@@ -40,6 +40,7 @@ class Pigeon::Task
     @context = context
     @engine = engine || Pigeon::Engine.default_engine
     @created_at = Time.now
+    @state = nil
 
     unless (@engine)
       raise EngineRequired, "Task creation requires an active Pigeon::Engine"

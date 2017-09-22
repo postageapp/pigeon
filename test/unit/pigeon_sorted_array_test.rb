@@ -1,4 +1,4 @@
-require File.expand_path(File.join(*%w[ .. helper ]), File.dirname(__FILE__))
+require_relative '../helper'
 
 class PigeonSortedArrayTest < Minitest::Test
   def test_empty_state

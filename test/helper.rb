@@ -8,8 +8,12 @@ module Minitest
   # status code based on test results is okay for the parent process, but
   # causes friction when using fork within tests. Here it's disabled unless
   # the process terminating is the parent.
+  class << self
+    undef_method(:autorun)
+  end
+
   def self.autorun
-    return if (@at_exit_hook_installed)
+    return if (defined?(@at_exit_hook_installed))
 
     @at_exit_hook_installed = Process.pid
 
@@ -51,10 +55,10 @@ class Minitest::Test
     flunk(message || 'assert_timeout timed out')
   end
   
-  def assert_eventually(time = nil, message = nil, &block)
+  def assert_eventually(time = nil, message = nil)
     start_time = Time.now.to_f
 
-    while (!block.call)
+    while (!yield)
       select(nil, nil, nil, 0.1)
       
       if (time and (Time.now.to_f - start_time > time))
@@ -64,6 +68,7 @@ class Minitest::Test
   end
 
   def engine
+    @engine = nil
     exception = nil
     test_thread = nil
     
@@ -79,7 +84,13 @@ class Minitest::Test
             @engine = launched
           end
 
-        rescue Object => exception
+        rescue Object => e
+          # $stderr.puts('[%s] %s' % [ e.class, e ])
+          # $stderr.puts(e.backtrace.join("\n"))
+
+          exception = e
+
+          Thread.current.kill
         end
       end
 
@@ -90,10 +101,14 @@ class Minitest::Test
         begin
           while (!@engine or Pigeon::Engine.default_engine != @engine)
             # Wait impatiently.
+            if (exception)
+              Thread.current.kill
+            end
           end
 
           yield(@engine)
-        rescue Object => exception
+        rescue Object => e
+          exception = e
         ensure
           begin
             if (EventMachine.reactor_running?)

@@ -91,7 +91,7 @@ class Pigeon::Scheduler
   
   # Returns the number of tasks that have been queued up.
   def queue_length
-    @queues.inject(0) do |length, (name, queue)|
+    @queues.inject(0) do |length, (_, queue)|
       length + queue.length
     end
   end

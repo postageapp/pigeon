@@ -1,4 +1,4 @@
-require File.expand_path(File.join(*%w[ .. helper ]), File.dirname(__FILE__))
+require_relative '../helper'
 
 class OptionClass
   extend Pigeon::OptionAccessor
@@ -57,15 +57,15 @@ class PigeonOptionAccessorTest < Minitest::Test
   end
 
   def test_boolean_option
-    assert_equal nil, OptionClass.multi1
+    assert_nil OptionClass.multi1
     
     instance = OptionClass.new
     
     instance.multi1 = false
     
     assert_equal false, instance.multi1
-    assert_equal nil, OptionClass.multi1
+    assert_nil OptionClass.multi1
     
-    assert_equal nil, instance.multi2
+    assert_nil instance.multi2
   end
 end

@@ -1,4 +1,4 @@
-require File.expand_path(File.join(*%w[ .. helper ]), File.dirname(__FILE__))
+require_relative '../helper'
 
 module TestModule
   def self.included(engine)
@@ -76,7 +76,7 @@ class TestPigeonEngine < Minitest::Test
     assert TestEngine.engine_logger
     assert TestEngine.engine_logger.is_a?(Logger)
 
-    assert_equal nil, TestEngine.default_engine
+    assert_nil TestEngine.default_engine
   end
   
   def test_example_subclass
@@ -104,7 +104,7 @@ class TestPigeonEngine < Minitest::Test
     end
 
     TestEngine.status do |pid|
-      assert_equal nil, pid
+      assert_nil pid
     end
   end
 
@@ -129,7 +129,7 @@ class TestPigeonEngine < Minitest::Test
     
     assert_equal engine_pid, TestEngine.stop
 
-    assert_equal nil, TestEngine.status
+    assert_nil TestEngine.status
   end
   
   def test_callbacks
@@ -158,7 +158,7 @@ class TestPigeonEngine < Minitest::Test
     end
 
     CallbackTestEngine.status do |pid|
-      assert_equal nil, pid
+      assert_nil pid
     end
     
     expected_callbacks = [

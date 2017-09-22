@@ -88,7 +88,7 @@ class Pigeon::Queue
       set << block
     end
 
-    task = assign_next_task(filter_name)
+    assign_next_task(filter_name)
   end
   
   # Removes references to the callback function specified. Note that the same
@@ -198,6 +198,8 @@ class Pigeon::Queue
   
   # Iterates over each of the tasks in the queue.
   def each
+    tasks = nil
+
     @filters.synchronize do
       tasks = @tasks.dup
     end
@@ -243,9 +245,9 @@ class Pigeon::Queue
 
       @tasks -= tasks
       
-      @next_task.each do |filter_name, next_task|
-        if (tasks.include?(@next_task[filter_name]))
-          @next_task[filter_name] = nil
+      @next_task.keys.each do |_filter_name|
+        if (tasks.include?(@next_task[_filter_name]))
+          @next_task[_filter_name] = nil
         end
       end
       
@@ -276,9 +278,9 @@ class Pigeon::Queue
       if (task)
         @tasks.delete(task)
 
-        @next_task.each do |filter_name, next_task|
+        @next_task.each do |_filter_name, next_task|
           if (task == next_task)
-            @next_task[filter_name] = nil
+            @next_task[_filter_name] = nil
           end
         end
       end

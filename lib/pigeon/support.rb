@@ -49,7 +49,7 @@ module Pigeon::Support
               relaunch = false
             end
 
-            pid, status = Process.wait2(daemon_pid)
+            _, status = Process.wait2(daemon_pid)
 
             if (interrupted)
               logger.info("Supervisor #{Process.pid} received termination signal, shut down child #{daemon_pid}.")
@@ -57,7 +57,7 @@ module Pigeon::Support
 
             # A non-zero exit status indicates some sort of error, so the
             # process will be relaunched after a short delay.
-            relaunch = ($? != 0)
+            relaunch = (status != 0)
 
           ensure
             # Reset Signal handler before forking again
@@ -86,7 +86,7 @@ module Pigeon::Support
       wfd.close
     end
 
-    pid, status = Process.wait2(forked_pid)
+    Process.wait2(forked_pid)
 
     daemon_pid = rfd.readline
     rfd.close

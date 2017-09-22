@@ -18,8 +18,8 @@ class Pigeon::Engine
   # == Properties ===========================================================
   
   option_accessor :logger
-  option_accessor :name
-  option_accessor :pid_file_name
+  option_writer :name
+  option_writer :pid_file_name
   option_accessor :foreground,
     boolean: true
   option_accessor :debug,
@@ -27,10 +27,13 @@ class Pigeon::Engine
   option_accessor :log_rotation
   option_accessor :engine_log_name,
     default: 'engine.log'
-  option_accessor :engine_logger
+  option_writer :engine_logger,
+    on: :class
+  option_accessor :engine_logger,
+    on: :instance
   option_accessor :query_log_name,
     default: 'query.log'
-  option_accessor :query_logger
+  option_writer :query_logger
   option_accessor :try_pid_dirs,
     default: %w[
       /var/run
@@ -69,12 +72,12 @@ class Pigeon::Engine
   # Returns the human-readable name of this engine. Defaults to the name
   # of the engine class, but can be replaced to customize a subclass.
   def self.name
-    @name or self.to_s.gsub(/::/, ' ')
+    @name ||= self.to_s.gsub(/::/, ' ')
   end
   
   # Returns the custom process name for this engine or nil if not assigned.
   def self.process_name
-    @process_name
+    @process_name ||= nil
   end
   
   # Assigns the process name. This will be applied only when the engine is
@@ -87,7 +90,7 @@ class Pigeon::Engine
   # user is required. This will be applied after the engine has been started
   # and the after_start call has been triggered.
   def self.user
-    @user
+    @user ||= nil
   end
   
   # Assigns the user this process should run as, given a username.
@@ -98,7 +101,7 @@ class Pigeon::Engine
   # Returns the name of the PID file to use. The full path to the file
   # is specified elsewhere.
   def self.pid_file_name
-    @pid_file_name or self.name.downcase.gsub(/ /, '-') + '.pid'
+    @pid_file_name ||= self.name.downcase.gsub(/ /, '-') + '.pid'
   end
   
   # Returns the full path to the PID file that should be used to track
@@ -246,7 +249,9 @@ class Pigeon::Engine
   # Returns a handle to the engine currently running, or nil if no engine is
   # currently active.
   def self.default_engine
-    @engines and @engines[0]
+    @engines ||= [ ]
+
+    @engines[0]
   end
 
   # Registers the engine as running. The first engine running will show up
@@ -258,6 +263,8 @@ class Pigeon::Engine
   
   # Removes the engine from the list of running engines.
   def self.unregister_engine(engine)
+    return unless (defined?(@engines))
+
     @engines.delete(engine)
   end
 
@@ -438,10 +445,9 @@ class Pigeon::Engine
     CHAINS.each do |chain_name|
       define_method(chain_name) do |&block|
         chain_iv = :"@_#{chain_name}_chain"
-        instance_variable_set(chain_iv, [ ]) unless (instance_variable_get(chain_iv))
-      
-        chain = instance_variable_get(chain_iv)
-      
+
+        chain = instance_variable_defined?(chain_iv) && instance_variable_get(chain_iv)
+
         unless (chain)
           chain = [ ]
           instance_variable_set(chain_iv, chain)
@@ -452,18 +458,10 @@ class Pigeon::Engine
     end
 
     def chain_procs(chain_name)
-      instance_variable_get(:"@_#{chain_name}_chain")
-    end
-  end
+      chain_iv = :"@_#{chain_name}_chain"
 
-  # Returns true if the debug option was set, false otherwise.
-  def debug?
-    !!self.debug
-  end
-  
-  # Returns true if running in the foreground, false otherwise.
-  def foreground?
-    !!self.foreground
+      instance_variable_defined?(chain_iv) and instance_variable_get(chain_iv)
+    end
   end
   
   # Registers a task with the engine. The given task will then be included

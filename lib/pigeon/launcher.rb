@@ -3,16 +3,17 @@ require 'optparse'
 class Pigeon::Launcher
   # == Class Methods ========================================================
   
-  def self.launch(engine = Pigeon::Engine, *arguments)
+  def self.launch(engine = Pigeon::Engine, *arguments, logging: true)
     arguments = %w[ start ] if (arguments.empty?)
     
-    new(engine).handle_args(*arguments)
+    new(engine, logging: logging).handle_args(*arguments)
   end
     
   # == Instance Methods =====================================================
     
-  def initialize(with_engine = Pigeon::Engine)
+  def initialize(with_engine = Pigeon::Engine, logging: true)
     @engine = with_engine
+    @logging = !!logging
     
     yield(self) if (block_given?)
   end
@@ -120,6 +121,8 @@ class Pigeon::Launcher
   end
   
   def log(message)
-    puts message
+    if (@logging)
+      puts(message)
+    end
   end
 end
