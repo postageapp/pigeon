@@ -20,15 +20,18 @@ class Pigeon::Pidfile
   end
   
   def running
-    pid = self.saved_pid
+    _pid = self.pid
 
-    (pid and Process.kill(0, pid)) ? pid : nil
+    (_pid and Process.kill(0, _pid)) ? _pid : nil
   rescue Errno::ESRCH
     nil
   end
   
-  def saved_pid
-    File.read(@path).to_i
+  def pid
+    contents = File.read(@path)
+
+    contents and contents.to_i
+    
   rescue Errno::ENOENT
     nil
   end

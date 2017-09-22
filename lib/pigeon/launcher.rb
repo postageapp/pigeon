@@ -39,9 +39,9 @@ class Pigeon::Launcher
     begin
       case (command)
       when 'start'
-        @engine.start do |pid|
-          yield(pid) if (block_given?)
-          self.start(pid)
+        @engine.start do |pid, launched|
+          yield(pid, launched) if (block_given?)
+          self.start(pid, launched)
         end
       when 'stop'
         @engine.stop do |pid|
@@ -79,8 +79,12 @@ class Pigeon::Launcher
     log "Use ^C to terminate."
   end
   
-  def start(pid)
-    log "#{@engine.name} now running. [%d]" % pid
+  def start(pid, launched)
+    if (launched)
+      log "#{@engine.name} now running. [%d]" % pid
+    else
+      log "#{@engine.name} already running. [%d]" % pid
+    end
   end
   
   def stop(pid)

@@ -144,6 +144,14 @@ class Pigeon::Engine
   end
 
   def self.start(options = nil)
+    if (self.pid_file.running?)
+      if (block_given?)
+        yield(self.pid_file.pid, false)
+      end
+
+      return self.pid_file.pid
+    end
+
     logger = self.engine_logger
     
     pid = Pigeon::Support.daemonize(logger) do
@@ -154,7 +162,7 @@ class Pigeon::Engine
 
     pid_file.create!(pid)
 
-    yield(pid) if (block_given?)
+    yield(pid, true) if (block_given?)
     
     pid
   end
