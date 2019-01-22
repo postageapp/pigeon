@@ -79,4 +79,4 @@ This engine is currently in development.
 
 ## Copyright
 
-Copyright (c) 2009-2015 Scott Tadman, The Working Group
+Copyright (c) 2009-2019 Scott Tadman, PostageApp Ltd.
